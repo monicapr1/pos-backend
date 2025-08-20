@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Clientes - POS</title>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<header class="header">
+  <div class="topbar container">
+    <div class="brand">
+      <img src="assets/logo.svg" alt="logo"/><span>POS System</span>
+    </div>
+    <nav class="nav"><a href="usuarios.html" class="">Usuarios</a><a href="clientes.html" class="active">Clientes</a><a href="productos.html" class="">Productos</a><a href="stock.html" class="">Inventario</a><a href="ventas.html" class="">Ventas</a></nav>
+    <div class="toolbar">
+      <button class="btn danger">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <h2>Gestión de clientes</h2>
+  <div class="card">
+    <div class="row spaced">
+      <div class="searchbar"><input class="input" placeholder="Buscar cliente por nombre o ID…"/></div>
+      <div class="toolbar">
+        <button class="btn">Filtrar</button>
+        <button class="btn primary">Agregar cliente</button>
+        <button class="btn">Editar</button>
+        <button class="btn">Ver</button>
+        <button class="btn danger">Eliminar</button>
+      </div>
+    </div>
+    <div class="mt-16">
+      <table class="table">
+        <thead><tr><th>ID Cliente</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Última compra</th><th>Acciones</th></tr></thead>
+        <tbody>
+          <tr><td>CUST001</td><td>Alicia Gómez</td><td>alicia@ejemplo.com</td><td>555-123-4567</td><td>2025-08-10</td><td class="actions"><button class="btn">✎</button> <button class="btn">👁</button> <button class="btn danger">🗑</button></td></tr>
+          <tr><td>CUST002</td><td>Bruno Díaz</td><td>bruno@ejemplo.com</td><td>555-987-6543</td><td>2025-08-12</td><td class="actions"><button class="btn">✎</button> <button class="btn">👁</button> <button class="btn danger">🗑</button></td></tr>
+          <tr><td>CUST003</td><td>Carmen Vela</td><td>carmen@ejemplo.com</td><td>555-567-8901</td><td>2025-07-28</td><td class="actions"><button class="btn">✎</button> <button class="btn">👁</button> <button class="btn danger">🗑</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<div class="footer">© 2025 POS System. Todos los derechos reservados.</div>
+</body></html>

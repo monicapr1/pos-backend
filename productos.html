@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Productos - POS</title>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<header class="header">
+  <div class="topbar container">
+    <div class="brand">
+      <img src="assets/logo.svg" alt="logo"/><span>POS System</span>
+    </div>
+    <nav class="nav"><a href="usuarios.html" class="">Usuarios</a><a href="clientes.html" class="">Clientes</a><a href="productos.html" class="active">Productos</a><a href="stock.html" class="">Inventario</a><a href="ventas.html" class="">Ventas</a></nav>
+    <div class="toolbar">
+      <button class="btn danger">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <h2>Catálogo de productos</h2>
+  <div class="row spaced">
+    <div class="searchbar">
+      <input class="input" placeholder="Buscar productos…"/>
+    </div>
+    <div class="toolbar">
+      <select class="input"><option>Todos los estados</option><option>En stock</option><option>Bajo stock</option><option>Sin stock</option></select>
+      <select class="input"><option>Todas las categorías</option><option>Suplementos</option><option>Snacks</option><option>Accesorios</option></select>
+      <button class="btn primary">Agregar producto</button>
+      <button class="btn">Acciones en lote</button>
+    </div>
+  </div>
+
+  <div class="grid cols-3 mt-16">
+    
+    <div class="product-card">
+      <img src="https://picsum.photos/seed/prod1/600/400" alt="producto 1"/>
+      <div class="pad">
+        <div class="title">Producto 1</div>
+        <div class="muted">SKU: SKU-001</div>
+        <div class="price">$ 19.99</div>
+        <div class="row mt-12"><span class="badge success">En stock</span></div>
+        <div class="row mt-12">
+          <button class="btn">Editar</button>
+          <button class="btn">Detalles</button>
+          <button class="btn danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <img src="https://picsum.photos/seed/prod2/600/400" alt="producto 2"/>
+      <div class="pad">
+        <div class="title">Producto 2</div>
+        <div class="muted">SKU: SKU-002</div>
+        <div class="price">$ 29.99</div>
+        <div class="row mt-12"><span class="badge success">En stock</span></div>
+        <div class="row mt-12">
+          <button class="btn">Editar</button>
+          <button class="btn">Detalles</button>
+          <button class="btn danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <img src="https://picsum.photos/seed/prod3/600/400" alt="producto 3"/>
+      <div class="pad">
+        <div class="title">Producto 3</div>
+        <div class="muted">SKU: SKU-003</div>
+        <div class="price">$ 39.99</div>
+        <div class="row mt-12"><span class="badge warning">Bajo stock</span></div>
+        <div class="row mt-12">
+          <button class="btn">Editar</button>
+          <button class="btn">Detalles</button>
+          <button class="btn danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <img src="https://picsum.photos/seed/prod4/600/400" alt="producto 4"/>
+      <div class="pad">
+        <div class="title">Producto 4</div>
+        <div class="muted">SKU: SKU-004</div>
+        <div class="price">$ 49.99</div>
+        <div class="row mt-12"><span class="badge success">En stock</span></div>
+        <div class="row mt-12">
+          <button class="btn">Editar</button>
+          <button class="btn">Detalles</button>
+          <button class="btn danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <img src="https://picsum.photos/seed/prod5/600/400" alt="producto 5"/>
+      <div class="pad">
+        <div class="title">Producto 5</div>
+        <div class="muted">SKU: SKU-005</div>
+        <div class="price">$ 59.99</div>
+        <div class="row mt-12"><span class="badge success">En stock</span></div>
+        <div class="row mt-12">
+          <button class="btn">Editar</button>
+          <button class="btn">Detalles</button>
+          <button class="btn danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <img src="https://picsum.photos/seed/prod6/600/400" alt="producto 6"/>
+      <div class="pad">
+        <div class="title">Producto 6</div>
+        <div class="muted">SKU: SKU-006</div>
+        <div class="price">$ 69.99</div>
+        <div class="row mt-12"><span class="badge warning">Bajo stock</span></div>
+        <div class="row mt-12">
+          <button class="btn">Editar</button>
+          <button class="btn">Detalles</button>
+          <button class="btn danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <img src="https://picsum.photos/seed/prod7/600/400" alt="producto 7"/>
+      <div class="pad">
+        <div class="title">Producto 7</div>
+        <div class="muted">SKU: SKU-007</div>
+        <div class="price">$ 79.99</div>
+        <div class="row mt-12"><span class="badge success">En stock</span></div>
+        <div class="row mt-12">
+          <button class="btn">Editar</button>
+          <button class="btn">Detalles</button>
+          <button class="btn danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <img src="https://picsum.photos/seed/prod8/600/400" alt="producto 8"/>
+      <div class="pad">
+        <div class="title">Producto 8</div>
+        <div class="muted">SKU: SKU-008</div>
+        <div class="price">$ 89.99</div>
+        <div class="row mt-12"><span class="badge success">En stock</span></div>
+        <div class="row mt-12">
+          <button class="btn">Editar</button>
+          <button class="btn">Detalles</button>
+          <button class="btn danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="product-card">
+      <img src="https://picsum.photos/seed/prod9/600/400" alt="producto 9"/>
+      <div class="pad">
+        <div class="title">Producto 9</div>
+        <div class="muted">SKU: SKU-009</div>
+        <div class="price">$ 99.99</div>
+        <div class="row mt-12"><span class="badge warning">Bajo stock</span></div>
+        <div class="row mt-12">
+          <button class="btn">Editar</button>
+          <button class="btn">Detalles</button>
+          <button class="btn danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</main>
+<div class="footer">© 2025 POS System. Todos los derechos reservados.</div>
+</body></html>

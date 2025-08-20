@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Iniciar sesión - POS</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="brand">
+          <img src="assets/logo.svg" /><span>POS System</span>
+        </div>
+        <h1>¡Bienvenido de nuevo!</h1>
+        <p>Inicia sesión para administrar tu tienda.</p>
+        <form
+          class="form"
+          onsubmit="event.preventDefault(); window.location='usuarios.html'"
+        >
+          <label
+            >Email<br /><input
+              class="input"
+              type="email"
+              placeholder="admin@tienda.com"
+              required
+          /></label>
+          <label
+            >Contraseña<br /><input
+              class="input"
+              type="password"
+              placeholder="********"
+              required
+          /></label>
+          <button class="btn primary" type="submit" style="width: 100%">
+            Ingresar
+          </button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
