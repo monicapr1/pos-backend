@@ -1,56 +1,127 @@
 <!DOCTYPE html>
-<html lang="es"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Usuarios - POS</title>
-<link rel="stylesheet" href="styles.css"/>
-</head>
-<body>
-
-<header class="header">
-  <div class="topbar container">
-    <div class="brand">
-      <img src="assets/logo.svg" alt="logo"/><span>POS System</span>
-    </div>
-    <nav class="nav"><a href="usuarios.html" class="active">Usuarios</a><a href="clientes.html" class="">Clientes</a><a href="productos.html" class="">Productos</a><a href="stock.html" class="">Inventario</a><a href="ventas.html" class="">Ventas</a></nav>
-    <div class="toolbar">
-      <button class="btn danger">Cerrar sesión</button>
-    </div>
-  </div>
-</header>
-
-<main class="container">
-  <h2>Gestión de usuarios</h2>
-  <div class="row">
-    <div class="card" style="min-width:260px;">
-      <h3>Filtros</h3>
-      <div class="mt-12"><input class="input" placeholder="Buscar por nombre o email"/></div>
-      <div class="mt-12"><select class="input"><option>Todos los roles</option><option>Administrador</option><option>Gerente</option><option>Cajero</option></select></div>
-      <div class="mt-12"><select class="input"><option>Todos los estados</option><option>Activo</option><option>Inactivo</option><option>Pendiente</option></select></div>
-    </div>
-    <div class="card" style="flex:1">
-      <div class="row spaced">
-        <div><strong>Lista de usuarios</strong><div class="muted">Administra los usuarios de tu POS aquí.</div></div>
-        <div class="actions row">
-          <button class="btn primary">Agregar usuario</button>
-          <button class="btn">Editar</button>
-          <button class="btn">Ver</button>
-          <button class="btn danger">Eliminar</button>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Usuarios - POS</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="topbar container">
+        <div class="brand">
+          <img src="assets/logo.svg" alt="logo" /><span>POS System</span>
+        </div>
+        <nav class="nav">
+          <a href="usuarios.html" class="active">Usuarios</a
+          ><a href="clientes.html" class="">Clientes</a
+          ><a href="productos.html" class="">Productos</a
+          ><a href="stock.html" class="">Inventario</a
+          ><a href="ventas.html" class="">Ventas</a>
+        </nav>
+        <div class="toolbar">
+          <button class="btn danger">Cerrar sesión</button>
         </div>
       </div>
-      <div class="mt-16">
-        <table class="table">
-          <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Último acceso</th><th>Acciones</th></tr></thead>
-          <tbody>
-            <tr><td>USR001</td><td>Ana López</td><td>ana@ejemplo.com</td><td>Administrador</td><td><span class="badge success">Activo</span></td><td>hace 2 horas</td><td class="actions"><button class="btn">⋯</button></td></tr>
-            <tr><td>USR002</td><td>Carlos Pérez</td><td>carlos@ejemplo.com</td><td>Cajero</td><td><span class="badge success">Activo</span></td><td>hace 5 horas</td><td class="actions"><button class="btn">⋯</button></td></tr>
-            <tr><td>USR003</td><td>Elena Ruiz</td><td>elena@ejemplo.com</td><td>Invitado</td><td><span class="badge danger">Inactivo</span></td><td>hace 3 días</td><td class="actions"><button class="btn">⋯</button></td></tr>
-            <tr><td>USR004</td><td>Diego Mata</td><td>diego@ejemplo.com</td><td>Gerente</td><td><span class="badge success">Activo</span></td><td>hace 1 hora</td><td class="actions"><button class="btn">⋯</button></td></tr>
-          </tbody>
-        </table>
-        <div class="pagination"><span>Anterior</span><span>1</span><span>Siguiente</span></div>
+    </header>
+
+    <main class="container">
+      <h2>Gestión de usuarios</h2>
+      <div class="row">
+        <div class="card" style="min-width: 260px">
+          <h3>Filtros</h3>
+          <div class="mt-12">
+            <input class="input" placeholder="Buscar por nombre o email" />
+          </div>
+          <div class="mt-12">
+            <select class="input">
+              <option>Todos los roles</option>
+              <option>Administrador</option>
+              <option>Gerente</option>
+              <option>Cajero</option>
+            </select>
+          </div>
+          <div class="mt-12">
+            <select class="input">
+              <option>Todos los estados</option>
+              <option>Activo</option>
+              <option>Inactivo</option>
+              <option>Pendiente</option>
+            </select>
+          </div>
+        </div>
+        <div class="card" style="flex: 1">
+          <div class="row spaced">
+            <div>
+              <strong>Lista de usuarios</strong>
+              <div class="muted">Administra los usuarios de tu POS aquí.</div>
+            </div>
+            <div class="actions row">
+              <button class="btn primary">Agregar usuario</button>
+              <button class="btn">Editar</button>
+              <button class="btn">Ver</button>
+              <button class="btn danger">Eliminar</button>
+            </div>
+          </div>
+          <div class="mt-16">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Último acceso</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>USR001</td>
+                  <td>Ana López</td>
+                  <td>ana@ejemplo.com</td>
+                  <td>Administrador</td>
+                  <td><span class="badge success">Activo</span></td>
+                  <td>hace 2 horas</td>
+                  <td class="actions"><button class="btn">⋯</button></td>
+                </tr>
+                <tr>
+                  <td>USR002</td>
+                  <td>Carlos Pérez</td>
+                  <td>carlos@ejemplo.com</td>
+                  <td>Cajero</td>
+                  <td><span class="badge success">Activo</span></td>
+                  <td>hace 5 horas</td>
+                  <td class="actions"><button class="btn">⋯</button></td>
+                </tr>
+                <tr>
+                  <td>USR003</td>
+                  <td>Elena Ruiz</td>
+                  <td>elena@ejemplo.com</td>
+                  <td>Invitado</td>
+                  <td><span class="badge danger">Inactivo</span></td>
+                  <td>hace 3 días</td>
+                  <td class="actions"><button class="btn">⋯</button></td>
+                </tr>
+                <tr>
+                  <td>USR004</td>
+                  <td>Diego Mata</td>
+                  <td>diego@ejemplo.com</td>
+                  <td>Gerente</td>
+                  <td><span class="badge success">Activo</span></td>
+                  <td>hace 1 hora</td>
+                  <td class="actions"><button class="btn">⋯</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="pagination">
+              <span>Anterior</span><span>1</span><span>Siguiente</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</main>
-<div class="footer">© 2025 POS System. Todos los derechos reservados.</div>
-</body></html>
+    </main>
+    <div class="footer">© 2025 POS System. Todos los derechos reservados.</div>
+  </body>
+</html>
