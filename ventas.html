@@ -1,106 +1,57 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Ventas - POS</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <header class="header">
-      <div class="topbar container">
-        <div class="brand">
-          <img src="assets/logo.svg" alt="logo" /><span>POS System</span>
-        </div>
-        <nav class="nav">
-          <a href="usuarios.html" class="">Usuarios</a
-          ><a href="clientes.html" class="">Clientes</a
-          ><a href="productos.html" class="">Productos</a
-          ><a href="stock.html" class="">Inventario</a
-          ><a href="ventas.html" class="active">Ventas</a>
-        </nav>
-        <div class="toolbar">
-          <button class="btn danger">Cerrar sesión</button>
-        </div>
-      </div>
-    </header>
 
-    <main class="container">
-      <h2>Transacciones de venta</h2>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ventas — POS</title>
+  <link rel="stylesheet" href="styles/styles.css" />
+</head>
+
+<body data-page="ventas">
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand"><span class="logo"></span><span>POS System</span></div>
+      <div class="row"><span id="userLabel" class="muted"></span><button id="btnLogout" class="btn">Cerrar
+          sesión</button></div>
+    </div>
+  </header>
+  <aside class="sidebar">
+    <a href="index.html">Caja</a>
+    <a href="ventas.html" class="active">Ventas</a>
+    <a href="productos.html">Productos</a>
+    <a href="stock.html">Inventario</a>
+    <a href="clientes.html">Clientes</a>
+    <a href="usuarios.html">Usuarios</a>
+  </aside>
+
+  <main class="main">
+    <div class="container">
       <div class="row spaced">
-        <div class="searchbar">
-          <input
-            class="input"
-            placeholder="Buscar ventas por ID, cliente o fecha…"
-          />
-        </div>
-        <div class="toolbar">
-          <button class="btn">Filtrar</button>
-          <select class="input">
-            <option>Estado</option>
-            <option>Completada</option>
-            <option>Cancelada</option>
-            <option>Devuelta</option>
-          </select>
-          <select class="input">
-            <option>Pago</option>
-            <option>Efectivo</option>
-            <option>Tarjeta</option>
-            <option>Transferencia</option>
-          </select>
-          <button class="btn primary">Agregar venta</button>
-          <button class="btn">Exportar</button>
-        </div>
+        <h1>Ventas</h1><a class="btn" href="index.html">Nueva venta</a>
       </div>
-      <div class="card mt-16">
+      <div class="card">
         <table class="table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>Folio</th>
               <th>Fecha</th>
               <th>Cliente</th>
-              <th>Productos vendidos</th>
-              <th>Cant.</th>
-              <th>Monto total</th>
-              <th>Vendedor</th>
-              <th>Acciones</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>TRN001</td>
-              <td>2025-08-19</td>
-              <td>Alicia Gómez</td>
-              <td>Proteína Whey (1), Mouse inalámbrico (1)</td>
-              <td>2</td>
-              <td>$1,250.00</td>
-              <td>Juan Pérez</td>
-              <td class="actions"><button class="btn">⋯</button></td>
-            </tr>
-            <tr>
-              <td>TRN002</td>
-              <td>2025-08-19</td>
-              <td>Bruno Díaz</td>
-              <td>Silla ergonómica (1), Monitor 27” (1)</td>
-              <td>2</td>
-              <td>$580.50</td>
-              <td>María López</td>
-              <td class="actions"><button class="btn">⋯</button></td>
-            </tr>
-            <tr>
-              <td>TRN003</td>
-              <td>2025-08-18</td>
-              <td>Carmen Vela</td>
-              <td>Paquete de oficina (1)</td>
-              <td>1</td>
-              <td>$75.20</td>
-              <td>Juan Pérez</td>
-              <td class="actions"><button class="btn">⋯</button></td>
-            </tr>
-          </tbody>
+          <tbody id="ventasBody"></tbody>
         </table>
       </div>
-    </main>
-    <div class="footer">© 2025 POS System. Todos los derechos reservados.</div>
-  </body>
+    </div>
+    <div class="footer">© 2025 POS System — Demo</div>
+  </main>
+  <div id="modal" class="modal hidden">
+    <div class="card" id="modalContent"></div>
+  </div>
+  <script src="js/app.js"></script>
+</body>
+
 </html>

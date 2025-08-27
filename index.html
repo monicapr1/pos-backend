@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Caja — POS</title>
+    <link rel="stylesheet" href="styles/styles.css" />
+</head>
+
+<body data-page="caja">
+
+    <!-- Topbar + Sidebar -->
+    <header class="topbar">
+        <div class="wrap">
+            <div class="brand"><span class="logo"></span><span>POS System</span></div>
+            <div class="row"><span id="userLabel" class="muted"></span><button id="btnLogout" class="btn">Cerrar
+                    sesión</button></div>
+        </div>
+    </header>
+    <aside class="sidebar">
+        <a href="index.html" class="active">Caja</a>
+        <a href="ventas.html">Ventas</a>
+        <a href="productos.html">Productos</a>
+        <a href="stock.html">Inventario</a>
+        <a href="clientes.html">Clientes</a>
+        <a href="usuarios.html">Usuarios</a>
+    </aside>
+
+    <main class="main">
+        <div class="container">
+            <div class="row spaced">
+                <h1>Caja</h1>
+                <div class="row">
+                    <button id="btnSelectCustomer" class="btn">Cliente</button>
+                    <button id="btnVaciar" class="btn">Vaciar carrito</button>
+                </div>
+            </div>
+
+            <div class="cols">
+                <div class="card">
+                    <table class="table cart-table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Precio</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartBody"></tbody>
+                    </table>
+                    <div class="row end" style="margin-top:8px">
+                        <div class="card" style="min-width:260px">
+                            <div>Subtotal: <strong id="lblSubtotal">$0.00</strong></div>
+                            <div>IVA: <strong id="lblTax">$0.00</strong></div>
+                            <div>Total: <strong id="lblTotal">$0.00</strong></div>
+                            <div class="muted" id="lblCliente">Cliente: Venta al público</div>
+                            <div class="row end" style="margin-top:10px"><button id="btnCobrar"
+                                    class="btn primary">Cobrar</button></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="row spaced">
+                        <h3>Productos</h3><input id="searchProducts" class="input"
+                            placeholder="Buscar por nombre o SKU…">
+                    </div>
+                    <div id="productGrid" class="grid cols-3" style="margin-top:8px"></div>
+                </div>
+            </div>
+        </div>
+        <div class="footer">© 2025 POS System — Demo</div>
+    </main>
+
+    <div id="modal" class="modal hidden">
+        <div class="card" id="modalContent"></div>
+    </div>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

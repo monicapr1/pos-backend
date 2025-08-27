@@ -1,42 +1,50 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Iniciar sesión - POS</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="auth-wrap">
-      <div class="auth-card">
-        <div class="brand">
-          <img src="assets/logo.svg" /><span>POS System</span>
-        </div>
-        <h1>¡Bienvenido de nuevo!</h1>
-        <p>Inicia sesión para administrar tu tienda.</p>
-        <form
-          class="form"
-          onsubmit="event.preventDefault(); window.location='usuarios.html'"
-        >
-          <label
-            >Email<br /><input
-              class="input"
-              type="email"
-              placeholder="admin@tienda.com"
-              required
-          /></label>
-          <label
-            >Contraseña<br /><input
-              class="input"
-              type="password"
-              placeholder="********"
-              required
-          /></label>
-          <button class="btn primary" type="submit" style="width: 100%">
-            Ingresar
-          </button>
-        </form>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iniciar sesión — POS</title>
+  <link rel="stylesheet" href="styles/styles.css" />
+</head>
+
+<body data-page="login">
+  <section id="view-login" class="auth">
+    <div class="card">
+      <div class="row" style="justify-content:center"><span class="logo brand"></span>
+        <h2>POS System</h2>
       </div>
+      <h1>¡Bienvenido de nuevo!</h1>
+      <p class="muted">Inicia sesión para administrar tu tienda.</p>
+      <form id="formLogin" class="grid">
+        <label>Email<br><input class="input" id="loginEmail" type="email" placeholder="admin@tienda.com"
+            required></label>
+        <label>Contraseña<br><input class="input" id="loginPassword" type="password" placeholder="123456"
+            required></label>
+        <button class="btn primary" type="submit">Ingresar</button>
+        <p id="loginError" class="muted hidden">Credenciales inválidas</p>
+      </form>
     </div>
-  </body>
+  </section>
+
+  <script>
+    // Login rápido aquí para no cargar todo app.js
+    const STORAGE_KEY = "pos-demo-es-v1";
+    function loadState() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") } catch { return null } }
+    function saveState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+    let st = loadState() || { session: null };
+    document.getElementById("formLogin").addEventListener("submit", e => {
+      e.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim();
+      const pass = document.getElementById("loginPassword").value.trim();
+      if (email === "admin@tienda.com" && pass === "123456") {
+        st.session = { email, nombre: "Administrador" }; saveState(st);
+        location.href = "index.html";
+      } else {
+        document.getElementById("loginError").classList.remove("hidden");
+      }
+    });
+  </script>
+</body>
+
 </html>
