@@ -1,0 +1,9 @@
+<!-- favicon.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- fondo transparente -->
+  <rect width="64" height="64" fill="none"></rect>
+  <!-- cuadrado redondeado oscuro -->
+  <rect x="6" y="6" width="52" height="52" rx="12" fill="#0B1324"></rect>
+  <!-- “borde” interior blanco -->
+  <rect x="16" y="16" width="32" height="32" rx="8" fill="none" stroke="#FFFFFF" stroke-width="4"></rect>
+</svg>

@@ -10,9 +10,11 @@ function loadState() {
     return null;
   }
 }
+
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
+
 function seedState() {
   return {
     session: null,
@@ -111,12 +113,41 @@ function seedState() {
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
+function money(n) {
+  return (
+    "$ " +
+    (Number(n) || 0).toLocaleString("es-MX", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
+}
+
+function nowLocalStamp() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return (
+    d.getFullYear() +
+    "-" +
+    pad(d.getMonth() + 1) +
+    "-" +
+    pad(d.getDate()) +
+    " " +
+    pad(d.getHours()) +
+    ":" +
+    pad(d.getMinutes()) +
+    ":" +
+    pad(d.getSeconds())
+  );
+}
+
 // ===== Auth compartido (todas las páginas excepto login) =====
 function requireSession() {
   if (!state.session) {
     location.href = "login.html";
   }
 }
+
 function mountShell() {
   // set usuario
   const label = $("#userLabel");
@@ -144,11 +175,18 @@ function initCaja() {
     cart = [];
     renderCart();
   };
-  $("#btnCobrar").onclick = () => openModal(renderCobro());
+  $("#btnCobrar").onclick = () => {
+    if (cart.length === 0) {
+      alert("Agrega al menos un producto al carrito para cobrar.");
+      return;
+    }
+    openModal(renderCobro());
+  };
   $("#searchProducts").oninput = renderPOS;
   renderPOS();
   renderCart();
 }
+
 function renderPOS() {
   const term = ($("#searchProducts").value || "").toLowerCase();
   const grid = $("#productGrid");
@@ -163,11 +201,11 @@ function renderPOS() {
       const card = document.createElement("div");
       card.className = "product-card";
       card.innerHTML = `
-        <img src="https://picsum.photos/seed/${p.id}/600/400" alt="${p.nombre}">
+        <img src="" alt="${p.nombre}">
         <div class="pad">
           <div class="title">${p.nombre}</div>
           <div class="muted">SKU: ${p.sku}</div>
-          <div class="price">$ ${p.precio.toFixed(2)}</div>
+          <div class="price">${money(p.precio)}</div>
           <div class="row"><span class="badge ${
             p.stock <= 0 ? "danger" : p.stock <= p.min ? "warning" : "success"
           }">
@@ -187,6 +225,7 @@ function renderPOS() {
       grid.appendChild(card);
     });
 }
+
 function addToCart(id) {
   const p = state.productos.find((x) => x.id === id);
   if (!p || p.stock <= 0) return;
@@ -198,64 +237,146 @@ function addToCart(id) {
   }
   renderCart();
 }
+
 function renderCart() {
   const tbody = $("#cartBody");
   if (!tbody) return;
+
   tbody.innerHTML = "";
   let subtotal = 0;
+
   cart.forEach((item) => {
     const p = state.productos.find((x) => x.id === item.productId);
     const line = p.precio * item.qty;
     subtotal += line;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${p.nombre}</td>
       <td><input type="number" min="1" max="${p.stock}" value="${
       item.qty
     }"></td>
-      <td>$ ${p.precio.toFixed(2)}</td>
-      <td>$ ${line.toFixed(2)}</td>
-      <td><button class="btn danger">Eliminar</button></td>`;
-    tr.querySelector("input").oninput = (e) => {
-      const v = Math.max(1, Math.min(parseInt(e.target.value || "1"), p.stock));
-      item.qty = v;
+      <td>${money(p.precio)}</td>
+      <td>${money(line)}</td>
+      <td><button class="btn danger">Eliminar</button></td>
+    `;
+
+    const qtyInput = tr.querySelector("input");
+
+    qtyInput.addEventListener("input", (e) => {
+      let raw = (e.target.value || "").replace(/[^\d]/g, "");
+      if (raw === "") return;
+
+      let n = parseInt(raw, 10);
+      if (n > p.stock) n = p.stock;
+      if (n < 1) n = 1;
+
+      item.qty = n;
+      // actualiza total de la fila
+      tr.children[3].textContent = money(p.precio * item.qty);
+
+      // recalcula totales sin re-render completo
+      let sub = 0;
+      cart.forEach((it) => {
+        const pr = state.productos.find((x) => x.id === it.productId);
+        sub += pr.precio * it.qty;
+      });
+      const iva = sub * 0.16;
+      $("#lblSubtotal").textContent = money(sub);
+      $("#lblTax").textContent = money(iva);
+      $("#lblTotal").textContent = money(sub + iva);
+    });
+
+    function commitQty() {
+      let n = parseInt(qtyInput.value || "1", 10);
+      if (isNaN(n) || n < 1) n = 1;
+      if (n > p.stock) n = p.stock;
+      item.qty = n;
+      qtyInput.value = n;
       renderCart();
-    };
-    tr.querySelector(".danger").onclick = () => {
+    }
+    qtyInput.addEventListener("change", commitQty);
+    qtyInput.addEventListener("blur", commitQty);
+    qtyInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        qtyInput.blur();
+      }
+    });
+
+    tr.querySelector(".danger").addEventListener("click", () => {
       cart = cart.filter((c) => c !== item);
       renderCart();
-    };
+    });
+
     tbody.appendChild(tr);
   });
-  const tax = subtotal * 0.16,
-    total = subtotal + tax;
-  $("#lblSubtotal").textContent = "$ " + subtotal.toFixed(2);
-  $("#lblTax").textContent = "$ " + tax.toFixed(2);
-  $("#lblTotal").textContent = "$ " + total.toFixed(2);
+
+  const tax = subtotal * 0.16;
+  const total = subtotal + tax;
+
+  $("#lblSubtotal").textContent = money(subtotal);
+  $("#lblTax").textContent = money(tax);
+  $("#lblTotal").textContent = money(total);
   $("#lblCliente").textContent =
     "Cliente: " +
     (selectedCustomer ? selectedCustomer.nombre : "Venta al público");
+
+  const btnCobrar = $("#btnCobrar");
+  if (btnCobrar) btnCobrar.disabled = cart.length === 0;
 }
+
 function renderClientePicker() {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
     <h3>Seleccionar cliente</h3>
-    <input id="pickSearch" class="input" placeholder="Buscar cliente…">
+    <input id="pickSearch" class="input" placeholder="Buscar cliente…"/>
     <div id="pickList" style="max-height:300px;overflow:auto;margin-top:8px"></div>
-    <div class="row end" style="margin-top:8px"><button class="btn" id="closeM">Cerrar</button></div>`;
+    <div class="row end" style="margin-top:8px">
+      <button class="btn" id="closeM">Cerrar</button>
+    </div>
+  `;
+
   const list = wrap.querySelector("#pickList");
-  function draw() {
-    list.innerHTML = "";
+
+  const publicoRow = document.createElement("div");
+  publicoRow.className = "row";
+  publicoRow.style.justifyContent = "space-between";
+  publicoRow.style.borderBottom = "1px solid var(--border)";
+  publicoRow.style.padding = "8px 0";
+  publicoRow.innerHTML = `
+    <div>
+      <strong>Venta al público (general)</strong>
+      <div class="muted">Sin datos de facturación</div>
+    </div>
+    <button class="btn">Elegir</button>
+  `;
+  publicoRow.querySelector("button").onclick = () => {
+    selectedCustomer = null;
+    closeModal();
+    renderCart();
+  };
+  list.appendChild(publicoRow);
+
+  const draw = () => {
+    list.querySelectorAll(".cliente-row").forEach((n) => n.remove());
+
     const term = wrap.querySelector("#pickSearch").value?.toLowerCase() || "";
     state.clientes
       .filter((c) => c.nombre.toLowerCase().includes(term))
       .forEach((c) => {
         const row = document.createElement("div");
-        row.className = "row";
+        row.className = "row cliente-row";
         row.style.justifyContent = "space-between";
         row.style.borderBottom = "1px solid var(--border)";
         row.style.padding = "8px 0";
-        row.innerHTML = `<div><strong>${c.nombre}</strong><div class="muted">${c.email} · ${c.tel}</div></div><button class="btn">Elegir</button>`;
+        row.innerHTML = `
+          <div>
+            <strong>${c.nombre}</strong>
+            <div class="muted">${c.email} · ${c.tel}</div>
+          </div>
+          <button class="btn">Elegir</button>
+        `;
         row.querySelector("button").onclick = () => {
           selectedCustomer = c;
           closeModal();
@@ -263,21 +384,34 @@ function renderClientePicker() {
         };
         list.appendChild(row);
       });
-  }
+  };
+
   wrap.querySelector("#pickSearch").oninput = draw;
   draw();
   wrap.querySelector("#closeM").onclick = closeModal;
+
   return wrap;
 }
+
 function renderCobro() {
-  const subtotal =
-    parseFloat($("#lblSubtotal").textContent.replace("$", "")) || 0;
-  const iva = parseFloat($("#lblTax").textContent.replace("$", "")) || 0;
-  const total = subtotal + iva;
+  if (cart.length === 0) {
+    alert("El carrito está vacío. Agrega productos antes de cobrar.");
+    const dummy = document.createElement("div");
+    return dummy;
+  }
+
+  let subtotalC = 0;
+  cart.forEach((it) => {
+    const p = state.productos.find((x) => x.id === it.productId);
+    if (p) subtotalC += Math.round(p.precio * 100) * it.qty;
+  });
+  const ivaC = Math.round(subtotalC * 0.16);
+  const totalC = subtotalC + ivaC;
+
   const wrap = document.createElement("div");
   wrap.innerHTML = `
     <h3>Cobro</h3>
-    <div>Total a pagar: <strong>$ ${total.toFixed(2)}</strong></div>
+    <div>Total a pagar: <strong>${money(totalC / 100)}</strong></div>
     <div class="grid cols-2" style="margin-top:8px">
       <label>Método de pago<br>
         <select id="metodo" class="input">
@@ -286,55 +420,72 @@ function renderCobro() {
           <option value="TRANSFERENCIA">Transferencia</option>
         </select>
       </label>
-      <label>Monto recibido<br><input id="monto" class="input" type="number" min="0" value="${total.toFixed(
-        2
-      )}"></label>
+      <label>Monto recibido<br>
+        <input id="monto" class="input" type="number" min="0" step="0.01" value="${(
+          totalC / 100
+        ).toFixed(2)}">
+      </label>
     </div>
     <div class="row end" style="margin-top:10px">
       <button class="btn" id="closeM">Cancelar</button>
       <button class="btn primary" id="confirm">Completar venta</button>
-    </div>`;
+    </div>
+  `;
+
   wrap.querySelector("#closeM").onclick = closeModal;
+
   wrap.querySelector("#confirm").onclick = () => {
     const metodo = wrap.querySelector("#metodo").value;
     const monto = parseFloat(wrap.querySelector("#monto").value || "0");
-    if (monto < total) {
+    const montoC = Math.round(monto * 100);
+
+    if (isNaN(montoC) || montoC < totalC) {
       alert("El monto recibido es insuficiente.");
       return;
     }
+
     const folio = "V-" + String(state.folio).padStart(4, "0");
     const venta = {
       id: state.folio++,
       folio,
-      fecha: new Date().toISOString().slice(0, 19).replace("T", " "),
+      fecha: nowLocalStamp(),
       cliente: selectedCustomer?.nombre || "Venta al público",
       items: cart.map((it) => {
         const p = state.productos.find((x) => x.id === it.productId);
+        const precioC = Math.round(p.precio * 100);
         return {
           sku: p.sku,
           nombre: p.nombre,
           qty: it.qty,
-          precio: p.precio,
-          total: p.precio * it.qty,
+          precio: precioC / 100,
+          total: (precioC * it.qty) / 100,
         };
       }),
-      subtotal: subtotal,
-      iva: iva,
-      total: subtotal + iva,
+      subtotal: subtotalC / 100,
+      iva: ivaC / 100,
+      total: totalC / 100,
       metodo,
     };
+
     state.ventas.unshift(venta);
     cart.forEach((it) => {
       const p = state.productos.find((x) => x.id === it.productId);
       if (p) p.stock = Math.max(0, p.stock - it.qty);
     });
+
     cart = [];
     selectedCustomer = null;
     saveState();
+
     closeModal();
+    renderCart();
     renderPOS();
-    alert("Venta completada.");
+    if (typeof renderVentas === "function") renderVentas();
+
+    const cambioC = montoC - totalC;
+    alert("Venta completada. Cambio: " + money(cambioC / 100));
   };
+
   return wrap;
 }
 
@@ -344,43 +495,269 @@ function initVentas() {
   mountShell();
   renderVentas();
 }
+
 function renderVentas() {
   const tbody = $("#ventasBody");
+  if (!tbody) return;
   tbody.innerHTML = "";
+
   state.ventas.forEach((v) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${v.folio}</td><td>${v.fecha}</td><td>${
-      v.cliente
-    }</td><td>${v.items.length}</td><td>$ ${v.total.toFixed(
-      2
-    )}</td><td><button class="btn">Ver</button></td>`;
-    tr.querySelector("button").onclick = () => openModal(renderVentaDetalle(v));
+    tr.innerHTML = `
+      <td>${v.folio}</td>
+      <td>${v.fecha}</td>
+      <td>${v.cliente}</td>
+      <td>${v.items.length}</td>
+      <td>${money(v.total)}</td>
+      <td>
+        <button class="btn ver">Ver</button>
+        <button class="btn">Editar</button>
+        <button class="btn danger">Eliminar</button>
+      </td>
+    `;
+    tr.querySelector(".ver").onclick = () => openModal(renderVentaDetalle(v));
+    tr.querySelector(".btn:not(.ver):not(.danger)").onclick = () =>
+      openModal(renderVentaForm(v));
+    tr.querySelector(".danger").onclick = () => deleteVenta(v);
     tbody.appendChild(tr);
   });
 }
+
 function renderVentaDetalle(v) {
   const wrap = document.createElement("div");
+
+  const itemsHtml =
+    v.items && v.items.length
+      ? v.items
+          .map(
+            (i) => `
+        <tr>
+          <td>${i.nombre}</td>
+          <td style="text-align:center">${i.qty}</td>
+          <td>${money(i.precio)}</td>
+          <td>${money(i.total)}</td>
+        </tr>
+      `
+          )
+          .join("")
+      : `<tr><td colspan="4" class="muted">Sin productos</td></tr>`;
+
   wrap.innerHTML = `
     <h3>Detalle de venta ${v.folio}</h3>
-    <div class="muted">${v.fecha} — ${v.cliente} — ${v.metodo}</div>
+    <div class="muted" style="margin-bottom:8px">
+      ${v.fecha} — ${v.cliente} — ${v.metodo || "—"}
+    </div>
+
     <table class="table" style="margin-top:8px">
-      <thead><tr><th>Producto</th><th>Qty</th><th>Precio</th><th>Total</th></tr></thead>
-      <tbody>${v.items
-        .map(
-          (i) =>
-            `<tr><td>${i.nombre}</td><td>${i.qty}</td><td>$ ${i.precio.toFixed(
-              2
-            )}</td><td>$ ${i.total.toFixed(2)}</td></tr>`
-        )
-        .join("")}</tbody>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th style="width:90px;text-align:center">Qty</th>
+          <th>Precio</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>${itemsHtml}</tbody>
     </table>
-    <div class="row end"><div class="card" style="min-width:240px">
-      <div>Subtotal: <strong>$ ${v.subtotal.toFixed(2)}</strong></div>
-      <div>IVA: <strong>$ ${v.iva.toFixed(2)}</strong></div>
-      <div>Total: <strong>$ ${v.total.toFixed(2)}</strong></div>
-    </div></div>
-    <div class="row end" style="margin-top:10px"><button class="btn" id="closeM">Cerrar</button></div>`;
+
+    <div class="row end" style="margin-top:8px">
+      <div class="card" style="min-width:240px">
+        <div>Subtotal: <strong>${money(v.subtotal)}</strong></div>
+        <div>IVA: <strong>${money(v.iva)}</strong></div>
+        <div>Total: <strong>${money(v.total)}</strong></div>
+      </div>
+    </div>
+
+    <div class="row end" style="margin-top:10px">
+      <button class="btn" id="closeM">Cerrar</button>
+    </div>
+  `;
+
   wrap.querySelector("#closeM").onclick = closeModal;
+  return wrap;
+}
+
+function deleteVenta(v) {
+  if (!confirm(`¿Eliminar la venta ${v.folio}? Se restaurará el stock.`))
+    return;
+
+  v.items.forEach((it) => {
+    const p = state.productos.find((x) => x.sku === it.sku);
+    if (p) p.stock += it.qty;
+  });
+
+  state.ventas = state.ventas.filter((x) => x.id !== v.id);
+  saveState();
+
+  if ($("#ventasBody")) renderVentas();
+  if (typeof renderPOS === "function") renderPOS();
+  if ($("#inventarioBody")) renderInventario();
+  alert("Venta eliminada y stock restaurado.");
+}
+
+function renderVentaForm(v) {
+  const prodBySku = (sku) => state.productos.find((p) => p.sku === sku);
+
+  const draft = v.items.map((it) => ({
+    sku: it.sku,
+    nombre: it.nombre,
+    precio: it.precio, // en pesos
+    qty: it.qty,
+  }));
+
+  const maxMap = {};
+  draft.forEach((it) => {
+    const p = prodBySku(it.sku);
+    const original = v.items.find((x) => x.sku === it.sku)?.qty || 0;
+    maxMap[it.sku] = original + (p ? p.stock : 0);
+  });
+
+  function calcTotalsCents() {
+    let subC = 0;
+    draft.forEach((it) => {
+      subC += Math.round(it.precio * 100) * it.qty;
+    });
+    const ivaC = Math.round(subC * 0.16);
+    return { subC, ivaC, totC: subC + ivaC };
+  }
+  let { subC, ivaC, totC } = calcTotalsCents();
+
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <h3>Editar venta ${v.folio}</h3>
+    <div class="grid cols-2" style="margin:8px 0">
+      <label>Cliente<br>
+        <input id="edCliente" class="input" value="${v.cliente}">
+      </label>
+      <label>Método de pago<br>
+        <select id="edMetodo" class="input">
+          <option value="EFECTIVO" ${
+            v.metodo === "EFECTIVO" ? "selected" : ""
+          }>Efectivo</option>
+          <option value="TARJETA" ${
+            v.metodo === "TARJETA" ? "selected" : ""
+          }>Tarjeta</option>
+          <option value="TRANSFERENCIA" ${
+            v.metodo === "TRANSFERENCIA" ? "selected" : ""
+          }>Transferencia</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="card" style="margin-top:6px">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th style="width:120px">Cantidad</th>
+            <th>Precio</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="editItemsBody">
+          ${draft
+            .map(
+              (it) => `
+            <tr data-sku="${it.sku}">
+              <td>${it.nombre}<div class="muted">SKU: ${it.sku}</div></td>
+              <td>
+                <input class="input qty" type="number" min="0" max="${
+                  maxMap[it.sku]
+                }" value="${it.qty}">
+                <div class="muted" style="font-size:12px">Máx: ${
+                  maxMap[it.sku]
+                }</div>
+              </td>
+              <td>${money(it.precio)}</td>
+              <td class="cell-total">${money(it.precio * it.qty)}</td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row end" style="margin-top:8px">
+      <div class="card" style="min-width:240px">
+        <div>Subtotal: <strong id="edSub">${money(subC / 100)}</strong></div>
+        <div>IVA: <strong id="edIva">${money(ivaC / 100)}</strong></div>
+        <div>Total: <strong id="edTot">${money(totC / 100)}</strong></div>
+      </div>
+    </div>
+
+    <div class="row end" style="margin-top:10px">
+      <button class="btn" id="closeM">Cancelar</button>
+      <button class="btn primary" id="saveV">Guardar cambios</button>
+    </div>
+  `;
+
+  wrap.querySelectorAll(".qty").forEach((inp) => {
+    inp.addEventListener("input", (e) => {
+      const tr = e.target.closest("tr");
+      const sku = tr.dataset.sku;
+      let n = parseInt(e.target.value || "0", 10);
+      if (isNaN(n) || n < 0) n = 0;
+      const max = maxMap[sku];
+      if (n > max) n = max;
+      e.target.value = n;
+
+      const it = draft.find((x) => x.sku === sku);
+      it.qty = n;
+
+      tr.querySelector(".cell-total").textContent = money(it.precio * it.qty);
+
+      const totals = calcTotalsCents();
+      subC = totals.subC;
+      ivaC = totals.ivaC;
+      totC = totals.totC;
+      $("#edSub", wrap).textContent = money(subC / 100);
+      $("#edIva", wrap).textContent = money(ivaC / 100);
+      $("#edTot", wrap).textContent = money(totC / 100);
+    });
+  });
+
+  $("#closeM", wrap).onclick = closeModal;
+
+  $("#saveV", wrap).onclick = () => {
+    draft.forEach((it) => {
+      const original = v.items.find((x) => x.sku === it.sku)?.qty || 0;
+      const diff = it.qty - original;
+      const p = prodBySku(it.sku);
+      if (p) {
+        if (p.stock - diff < 0) {
+          alert(
+            `No hay stock suficiente para "${p.nombre}". Máximo permitido ya aplicado.`
+          );
+          return;
+        }
+        p.stock -= diff;
+      }
+    });
+
+    v.cliente =
+      ($("#edCliente", wrap).value || "Venta al público").trim() ||
+      "Venta al público";
+    v.metodo = $("#edMetodo", wrap).value;
+    v.items = draft.map((it) => ({
+      sku: it.sku,
+      nombre: it.nombre,
+      qty: it.qty,
+      precio: it.precio,
+      total: it.precio * it.qty,
+    }));
+    v.subtotal = subC / 100;
+    v.iva = ivaC / 100;
+    v.total = totC / 100;
+
+    saveState();
+    closeModal();
+    if ($("#ventasBody")) renderVentas();
+    if (typeof renderPOS === "function") renderPOS();
+    if ($("#inventarioBody")) renderInventario();
+    alert("Venta actualizada.");
+  };
+
   return wrap;
 }
 
@@ -391,6 +768,7 @@ function initProductos() {
   renderProductos();
   $("#btnAddProducto").onclick = () => openModal(renderProductoForm());
 }
+
 function renderProductos() {
   const tbody = $("#productosBody");
   tbody.innerHTML = "";
@@ -402,9 +780,10 @@ function renderProductos() {
         ? '<span class="badge warning">Bajo stock</span>'
         : '<span class="badge success">En stock</span>';
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${p.sku}</td><td>${
-      p.nombre
-    }</td><td>$ ${p.precio.toFixed(2)}</td><td>${
+    tr.innerHTML = `<td>${p.sku}</td><td>${p.nombre}</td><td>${money(
+      p.precio
+    )}</td>
+    <td>${
       p.stock
     }</td><td>${estado}</td><td><button class="btn">Editar</button> <button class="btn danger">Eliminar</button></td>`;
     tr.querySelector(".btn").onclick = () => openModal(renderProductoForm(p));
@@ -418,6 +797,7 @@ function renderProductos() {
     tbody.appendChild(tr);
   });
 }
+
 function renderProductoForm(p) {
   const isEdit = !!p;
   const wrap = document.createElement("div");
@@ -476,6 +856,7 @@ function initStock() {
   mountShell();
   renderInventario();
 }
+
 function renderInventario() {
   const tbody = $("#inventarioBody");
   tbody.innerHTML = "";
@@ -499,6 +880,7 @@ function initClientes() {
   renderClientes();
   $("#btnAddCliente").onclick = () => openModal(renderClienteForm());
 }
+
 function renderClientes() {
   const tbody = $("#clientesBody");
   tbody.innerHTML = "";
@@ -516,6 +898,7 @@ function renderClientes() {
     tbody.appendChild(tr);
   });
 }
+
 function renderClienteForm(c) {
   const isEdit = !!c;
   const wrap = document.createElement("div");
@@ -567,6 +950,7 @@ function initUsuarios() {
   renderUsuarios();
   $("#btnAddUsuario").onclick = () => openModal(renderUsuarioForm());
 }
+
 function renderUsuarios() {
   const tbody = $("#usuariosBody");
   tbody.innerHTML = "";
@@ -590,6 +974,7 @@ function renderUsuarios() {
     tbody.appendChild(tr);
   });
 }
+
 function renderUsuarioForm(u) {
   const isEdit = !!u;
   const wrap = document.createElement("div");
@@ -654,11 +1039,13 @@ function openModal(content) {
   m.classList.remove("hidden");
   m.addEventListener("click", backdropClose);
 }
+
 function backdropClose(e) {
   if (e.target.id === "modal") {
     closeModal();
   }
 }
+
 function closeModal() {
   const m = $("#modal"),
     c = $("#modalContent");

@@ -6,6 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Iniciar sesión — POS</title>
   <link rel="stylesheet" href="styles/styles.css" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <meta name="theme-color" content="#0B1324">
+
 </head>
 
 <body data-page="login">
@@ -28,7 +31,6 @@
   </section>
 
   <script>
-    // Login rápido aquí para no cargar todo app.js
     const STORAGE_KEY = "pos-demo-es-v1";
     function loadState() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") } catch { return null } }
     function saveState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
