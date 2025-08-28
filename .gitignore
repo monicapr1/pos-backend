@@ -1,4 +1,38 @@
-# Ignorar archivos de sistema de macOS
+# --- Global (macOS / editores / OS) ---
 .DS_Store
-*/.DS_Store
-**/.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
+*.tmp
+.vscode/
+.idea/
+*.iml
+
+# --- Node / dependencias ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+package-lock.json
+
+# --- Entornos ---
+.env
+.env.local
+.env.*.local
+
+# --- Cobertura / build ---
+coverage/
+dist/
+build/
+
+# --- SQLite (BD) ---
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# --- Subidas / archivos dinámicos ---
+uploads/
+public/uploads/
+tmp/

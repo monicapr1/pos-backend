@@ -4,49 +4,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Iniciar sesión — POS</title>
-  <link rel="stylesheet" href="styles/styles.css" />
+  <title>POS System — Iniciar sesión</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <meta name="theme-color" content="#0B1324">
-
+  <link rel="stylesheet" href="styles/styles.css">
 </head>
 
-<body data-page="login">
-  <section id="view-login" class="auth">
+<body>
+  <section class="auth">
     <div class="card">
-      <div class="row" style="justify-content:center"><span class="logo brand"></span>
+      <div class="row" style="justify-content:center">
+        <span class="logo brand"></span>
         <h2>POS System</h2>
       </div>
       <h1>¡Bienvenido de nuevo!</h1>
       <p class="muted">Inicia sesión para administrar tu tienda.</p>
+
       <form id="formLogin" class="grid">
-        <label>Email<br><input class="input" id="loginEmail" type="email" placeholder="admin@tienda.com"
-            required></label>
-        <label>Contraseña<br><input class="input" id="loginPassword" type="password" placeholder="123456"
-            required></label>
+        <label>Email<br>
+          <input class="input" id="loginEmail" type="email" placeholder="Email" required>
+        </label>
+        <label>Contraseña<br>
+          <input class="input" id="loginPassword" type="password" placeholder="Contraseña" required>
+        </label>
         <button class="btn primary" type="submit">Ingresar</button>
         <p id="loginError" class="muted hidden">Credenciales inválidas</p>
       </form>
     </div>
   </section>
 
-  <script>
-    const STORAGE_KEY = "pos-demo-es-v1";
-    function loadState() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") } catch { return null } }
-    function saveState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
-    let st = loadState() || { session: null };
-    document.getElementById("formLogin").addEventListener("submit", e => {
-      e.preventDefault();
-      const email = document.getElementById("loginEmail").value.trim();
-      const pass = document.getElementById("loginPassword").value.trim();
-      if (email === "admin@tienda.com" && pass === "123456") {
-        st.session = { email, nombre: "Administrador" }; saveState(st);
-        location.href = "index.html";
-      } else {
-        document.getElementById("loginError").classList.remove("hidden");
-      }
-    });
-  </script>
+  <!-- Modal global (no se usa aquí, pero lo dejamos uniforme) -->
+  <div id="modal" class="modal hidden">
+    <div class="card" id="modalContent"></div>
+  </div>
+
+  <script src="js/app.js"></script>
 </body>
 
 </html>

@@ -1,115 +1,44 @@
-// ===== Estado & semillas =====
-const STORAGE_KEY = "pos-demo-es-v1";
-const state = loadState() || seedState();
-saveState();
+/***********************
+ * Config & Helpers
+ ************************/
+const API_BASE = "http://localhost:4000";
 
-function loadState() {
+// Token
+function getToken() {
+  return localStorage.getItem("pos_token") || "";
+}
+function setToken(t) {
+  localStorage.setItem("pos_token", t);
+}
+function clearToken() {
+  localStorage.removeItem("pos_token");
+}
+
+// Fetch helper
+async function api(path, { method = "GET", body, auth = true } = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (auth && getToken()) headers.Authorization = "Bearer " + getToken();
+
+  const res = await fetch(API_BASE + path, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = null;
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    data = await res.json();
   } catch {
-    return null;
+    /* no body */
   }
+
+  if (!res.ok) {
+    const msg = data && data.error ? data.error : `Error API ${res.status}`;
+    throw new Error(msg);
+  }
+  return data;
 }
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function seedState() {
-  return {
-    session: null,
-    users: [
-      {
-        id: 1,
-        nombre: "Administrador",
-        email: "admin@tienda.com",
-        rol: "ADMIN",
-        activo: true,
-      },
-      {
-        id: 2,
-        nombre: "Cajero 1",
-        email: "caja1@tienda.com",
-        rol: "CASHIER",
-        activo: true,
-      },
-    ],
-    clientes: [
-      {
-        id: 1,
-        nombre: "Alicia Gómez",
-        email: "alicia@ejemplo.com",
-        tel: "555-123-4567",
-      },
-      {
-        id: 2,
-        nombre: "Bruno Díaz",
-        email: "bruno@ejemplo.com",
-        tel: "555-987-6543",
-      },
-      {
-        id: 3,
-        nombre: "Carmen Vela",
-        email: "carmen@ejemplo.com",
-        tel: "555-567-8901",
-      },
-    ],
-    productos: [
-      {
-        id: 1,
-        sku: "WPI-001",
-        nombre: "Proteína Whey 1kg",
-        precio: 799,
-        stock: 12,
-        min: 5,
-      },
-      {
-        id: 2,
-        sku: "CRT-300",
-        nombre: "Creatina 300g",
-        precio: 299,
-        stock: 5,
-        min: 10,
-      },
-      {
-        id: 3,
-        sku: "ELT-ION",
-        nombre: "Electrolitos 500ml",
-        precio: 35,
-        stock: 40,
-        min: 10,
-      },
-      {
-        id: 4,
-        sku: "SHK-700",
-        nombre: "Shaker 700ml",
-        precio: 159,
-        stock: 0,
-        min: 8,
-      },
-      {
-        id: 5,
-        sku: "GLV-L",
-        nombre: "Guantes Gym Talla L",
-        precio: 249,
-        stock: 7,
-        min: 5,
-      },
-      {
-        id: 6,
-        sku: "BTT-STEEL",
-        nombre: "Botella Acero 1L",
-        precio: 189,
-        stock: 20,
-        min: 6,
-      },
-    ],
-    ventas: [],
-    folio: 1,
-  };
-}
-
-// ===== Helpers globales =====
+// UI helpers
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
@@ -123,121 +52,239 @@ function money(n) {
   );
 }
 
-function nowLocalStamp() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  return (
-    d.getFullYear() +
-    "-" +
-    pad(d.getMonth() + 1) +
-    "-" +
-    pad(d.getDate()) +
-    " " +
-    pad(d.getHours()) +
-    ":" +
-    pad(d.getMinutes()) +
-    ":" +
-    pad(d.getSeconds())
-  );
+// Modal (compartido)
+const modal = $("#modal");
+const modalContent = $("#modalContent");
+function openModal(node) {
+  if (!modal || !modalContent) return;
+  modalContent.innerHTML = "";
+  modalContent.appendChild(node);
+  modal.classList.remove("hidden");
+  modal.addEventListener("click", backdropClose);
+}
+function backdropClose(e) {
+  if (e.target === modal) closeModal();
+}
+function closeModal() {
+  if (!modal || !modalContent) return;
+  modal.classList.add("hidden");
+  modalContent.innerHTML = "";
+  modal.removeEventListener("click", backdropClose);
 }
 
-// ===== Auth compartido (todas las páginas excepto login) =====
-function requireSession() {
-  if (!state.session) {
-    location.href = "login.html";
-  }
-}
+/***********************
+ * Estado del Front
+ ************************/
+const state = {
+  userName: localStorage.getItem("pos_user_name") || "",
+  productos: [],
+  clientes: [],
+  usuarios: [],
+  ventas: [], // listado (sin items)
+};
 
-function mountShell() {
-  // set usuario
-  const label = $("#userLabel");
-  if (label) label.textContent = state.session?.nombre || "";
-  const logout = $("#btnLogout");
-  if (logout)
-    logout.onclick = () => {
-      state.session = null;
-      saveState();
-      location.href = "login.html";
-    };
-}
-
-// ===== ========== PÁGINAS ESPECÍFICAS ========== =====
-
-// ---- Caja (index.html)
+// Carrito (sólo en Caja)
 let cart = [];
 let selectedCustomer = null;
 
-function initCaja() {
-  requireSession();
-  mountShell();
-  $("#btnSelectCustomer").onclick = () => openModal(renderClientePicker());
-  $("#btnVaciar").onclick = () => {
-    cart = [];
-    renderCart();
-  };
-  $("#btnCobrar").onclick = () => {
-    if (cart.length === 0) {
-      alert("Agrega al menos un producto al carrito para cobrar.");
-      return;
+/***********************
+ * Login Page
+ ************************/
+(function initLogin() {
+  const form = $("#formLogin");
+  if (!form) return; // no estamos en login.html
+
+  const errorEl = $("#loginError");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("#loginEmail").value.trim();
+    const password = $("#loginPassword").value.trim();
+    try {
+      const { token, user } = await api("/auth/login", {
+        method: "POST",
+        body: { email, password },
+        auth: false,
+      });
+      setToken(token);
+      localStorage.setItem("pos_user_name", user.name || "Usuario");
+      location.href = "index.html";
+    } catch (err) {
+      if (errorEl) errorEl.classList.remove("hidden");
     }
-    openModal(renderCobro());
-  };
-  $("#searchProducts").oninput = renderPOS;
-  renderPOS();
-  renderCart();
+  });
+})();
+
+/***********************
+ * Barra superior / Logout
+ ************************/
+(function initTopbar() {
+  const topUser = $("#userLabel");
+  if (topUser) topUser.textContent = state.userName || "";
+
+  const btnLogout = $("#btnLogout");
+  if (btnLogout) {
+    btnLogout.onclick = () => {
+      clearToken();
+      localStorage.removeItem("pos_user_name");
+      location.href = "login.html";
+    };
+  }
+})();
+
+/***********************
+ * Carga de datos comunes
+ ************************/
+async function loadCommon() {
+  // Si no hay token, redirige salvo que sea login
+  if (!getToken() && !$("#formLogin")) {
+    location.href = "login.html";
+    return;
+  }
+
+  // Usuarios sólo para la página de usuarios
+  const needProducts = !!(
+    $("#productGrid") ||
+    $("#productosBody") ||
+    $("#inventarioBody")
+  );
+  const needCustomers = !!($("#clientesBody") || $("#btnSelectCustomer"));
+  const needSales = !!$("#ventasBody");
+  const needUsers = !!$("#usuariosBody");
+
+  const tasks = [];
+  if (needProducts)
+    tasks.push(api("/api/products").then((d) => (state.productos = d)));
+  if (needCustomers)
+    tasks.push(api("/api/customers").then((d) => (state.clientes = d)));
+  if (needSales)
+    tasks.push(
+      api("/api/sales").then((d) => {
+        state.ventas = d.map((s) => ({
+          id: s.id,
+          folio: s.folio,
+          fecha: s.date,
+          cliente: s.customer,
+          metodo: s.method,
+          subtotal: s.subtotal,
+          iva: s.tax,
+          total: s.total,
+          items: null,
+        }));
+      })
+    );
+  if (needUsers)
+    tasks.push(api("/api/users").then((d) => (state.usuarios = d)));
+
+  if (tasks.length) await Promise.all(tasks);
 }
 
+/***********************
+ * ---- CAJA (index.html)
+ ************************/
+(function initCaja() {
+  const cartBody = $("#cartBody");
+  if (!cartBody) return; // no estamos en index.html (Caja)
+
+  // Botones
+  const btnSelectCustomer = $("#btnSelectCustomer");
+  if (btnSelectCustomer)
+    btnSelectCustomer.onclick = () => openModal(renderClientePicker());
+
+  const btnVaciar = $("#btnVaciar");
+  if (btnVaciar)
+    btnVaciar.onclick = () => {
+      cart = [];
+      renderCart();
+    };
+
+  const btnCobrar = $("#btnCobrar");
+  if (btnCobrar)
+    btnCobrar.onclick = () => {
+      if (cart.length === 0) {
+        alert("Agrega al menos un producto al carrito para cobrar.");
+        return;
+      }
+      openModal(renderCobro());
+    };
+
+  // Buscar productos
+  const search = $("#searchProducts");
+  if (search) search.oninput = renderPOS;
+
+  // Cargar datos y renderizar
+  loadCommon().then(() => {
+    renderPOS();
+    renderCart();
+  });
+})();
+
+// Render tarjetas de producto y agregar al carrito
 function renderPOS() {
-  const term = ($("#searchProducts").value || "").toLowerCase();
   const grid = $("#productGrid");
+  if (!grid) return;
   grid.innerHTML = "";
+  const term = ($("#searchProducts")?.value || "").toLowerCase();
+
   state.productos
     .filter(
       (p) =>
-        p.nombre.toLowerCase().includes(term) ||
+        p.name.toLowerCase().includes(term) ||
         p.sku.toLowerCase().includes(term)
     )
     .forEach((p) => {
+      const imgSrc =
+        p.image_url && p.image_url.trim() !== ""
+          ? p.image_url.startsWith("http")
+            ? p.image_url
+            : API_BASE + p.image_url.replace(/^\/+/, "/")
+          : `https://placehold.co/600x400?text=${encodeURIComponent(p.name)}`;
+
       const card = document.createElement("div");
       card.className = "product-card";
       card.innerHTML = `
-        <img src="" alt="${p.nombre}">
+        <img src="${imgSrc}" alt="${p.name}">
         <div class="pad">
-          <div class="title">${p.nombre}</div>
+          <div class="title">${p.name}</div>
           <div class="muted">SKU: ${p.sku}</div>
-          <div class="price">${money(p.precio)}</div>
-          <div class="row"><span class="badge ${
-            p.stock <= 0 ? "danger" : p.stock <= p.min ? "warning" : "success"
-          }">
-            ${
-              p.stock <= 0
-                ? "Sin stock"
-                : p.stock <= p.min
-                ? "Bajo stock"
-                : "En stock"
-            }
-          </span></div>
-          <div class="row" style="margin-top:8px"><button class="btn" ${
-            p.stock <= 0 ? "disabled" : ""
-          }>Agregar</button></div>
-        </div>`;
+          <div class="price">${money(p.price)}</div>
+          <div class="row">
+            <span class="badge ${
+              p.stock <= 0 ? "danger" : p.stock <= p.min ? "warning" : "success"
+            }">
+              ${
+                p.stock <= 0
+                  ? "Sin stock"
+                  : p.stock <= p.min
+                  ? "Bajo stock"
+                  : "En stock"
+              }
+            </span>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn" ${
+              p.stock <= 0 ? "disabled" : ""
+            }>Agregar</button>
+          </div>
+        </div>
+      `;
       card.querySelector("button").onclick = () => addToCart(p.id);
       grid.appendChild(card);
     });
 }
 
-function addToCart(id) {
-  const p = state.productos.find((x) => x.id === id);
+function addToCart(productId) {
+  const p = state.productos.find((x) => x.id === productId);
   if (!p || p.stock <= 0) return;
-  const it = cart.find((i) => i.productId === id);
+  const it = cart.find((i) => i.productId === productId);
   if (it) {
     if (it.qty < p.stock) it.qty++;
   } else {
-    cart.push({ productId: id, qty: 1 });
+    cart.push({ productId, qty: 1 });
   }
   renderCart();
 }
 
+// Carrito
 function renderCart() {
   const tbody = $("#cartBody");
   if (!tbody) return;
@@ -247,39 +294,37 @@ function renderCart() {
 
   cart.forEach((item) => {
     const p = state.productos.find((x) => x.id === item.productId);
-    const line = p.precio * item.qty;
+    const line = p.price * item.qty;
     subtotal += line;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${p.nombre}</td>
+      <td>${p.name}</td>
       <td><input type="number" min="1" max="${p.stock}" value="${
       item.qty
     }"></td>
-      <td>${money(p.precio)}</td>
+      <td>${money(p.price)}</td>
       <td>${money(line)}</td>
       <td><button class="btn danger">Eliminar</button></td>
     `;
 
     const qtyInput = tr.querySelector("input");
 
+    // edición fluida sin perder caret
     qtyInput.addEventListener("input", (e) => {
       let raw = (e.target.value || "").replace(/[^\d]/g, "");
       if (raw === "") return;
-
       let n = parseInt(raw, 10);
       if (n > p.stock) n = p.stock;
       if (n < 1) n = 1;
-
       item.qty = n;
-      // actualiza total de la fila
-      tr.children[3].textContent = money(p.precio * item.qty);
+      tr.children[3].textContent = money(p.price * item.qty);
 
-      // recalcula totales sin re-render completo
+      // actualizar totales sin re-render completo
       let sub = 0;
       cart.forEach((it) => {
         const pr = state.productos.find((x) => x.id === it.productId);
-        sub += pr.precio * it.qty;
+        sub += pr.price * it.qty;
       });
       const iva = sub * 0.16;
       $("#lblSubtotal").textContent = money(sub);
@@ -304,10 +349,10 @@ function renderCart() {
       }
     });
 
-    tr.querySelector(".danger").addEventListener("click", () => {
+    tr.querySelector(".danger").onclick = () => {
       cart = cart.filter((c) => c !== item);
       renderCart();
-    });
+    };
 
     tbody.appendChild(tr);
   });
@@ -320,36 +365,35 @@ function renderCart() {
   $("#lblTotal").textContent = money(total);
   $("#lblCliente").textContent =
     "Cliente: " +
-    (selectedCustomer ? selectedCustomer.nombre : "Venta al público");
+    (selectedCustomer ? selectedCustomer.name : "Venta al público");
 
   const btnCobrar = $("#btnCobrar");
   if (btnCobrar) btnCobrar.disabled = cart.length === 0;
 }
 
+// Selector de cliente (incluye venta al público)
 function renderClientePicker() {
   const wrap = document.createElement("div");
   wrap.innerHTML = `
     <h3>Seleccionar cliente</h3>
-    <input id="pickSearch" class="input" placeholder="Buscar cliente…"/>
+    <input id="pickSearch" class="input" placeholder="Buscar cliente…">
     <div id="pickList" style="max-height:300px;overflow:auto;margin-top:8px"></div>
     <div class="row end" style="margin-top:8px">
       <button class="btn" id="closeM">Cerrar</button>
     </div>
   `;
 
-  const list = wrap.querySelector("#pickList");
+  const list = $("#pickList", wrap);
 
+  // Fijo: venta al público
   const publicoRow = document.createElement("div");
   publicoRow.className = "row";
   publicoRow.style.justifyContent = "space-between";
   publicoRow.style.borderBottom = "1px solid var(--border)";
   publicoRow.style.padding = "8px 0";
   publicoRow.innerHTML = `
-    <div>
-      <strong>Venta al público (general)</strong>
-      <div class="muted">Sin datos de facturación</div>
-    </div>
-    <button class="btn">Elegir</button>
+    <div><strong>Venta al público (general)</strong><div class="muted">Sin datos de facturación</div></div>
+    <button class="btn">Usar</button>
   `;
   publicoRow.querySelector("button").onclick = () => {
     selectedCustomer = null;
@@ -358,12 +402,11 @@ function renderClientePicker() {
   };
   list.appendChild(publicoRow);
 
-  const draw = () => {
+  function draw() {
     list.querySelectorAll(".cliente-row").forEach((n) => n.remove());
-
-    const term = wrap.querySelector("#pickSearch").value?.toLowerCase() || "";
+    const term = ($("#pickSearch", wrap).value || "").toLowerCase();
     state.clientes
-      .filter((c) => c.nombre.toLowerCase().includes(term))
+      .filter((c) => (c.name || "").toLowerCase().includes(term))
       .forEach((c) => {
         const row = document.createElement("div");
         row.className = "row cliente-row";
@@ -371,10 +414,9 @@ function renderClientePicker() {
         row.style.borderBottom = "1px solid var(--border)";
         row.style.padding = "8px 0";
         row.innerHTML = `
-          <div>
-            <strong>${c.nombre}</strong>
-            <div class="muted">${c.email} · ${c.tel}</div>
-          </div>
+          <div><strong>${c.name}</strong><div class="muted">${c.email || ""} ${
+          c.phone ? "· " + c.phone : ""
+        }</div></div>
           <button class="btn">Elegir</button>
         `;
         row.querySelector("button").onclick = () => {
@@ -384,26 +426,26 @@ function renderClientePicker() {
         };
         list.appendChild(row);
       });
-  };
+  }
 
-  wrap.querySelector("#pickSearch").oninput = draw;
+  $("#pickSearch", wrap).oninput = draw;
   draw();
-  wrap.querySelector("#closeM").onclick = closeModal;
-
+  $("#closeM", wrap).onclick = closeModal;
   return wrap;
 }
 
+// Cobro (POST /api/sales) con centavos para precisión
 function renderCobro() {
   if (cart.length === 0) {
     alert("El carrito está vacío. Agrega productos antes de cobrar.");
-    const dummy = document.createElement("div");
-    return dummy;
+    const d = document.createElement("div");
+    return d;
   }
 
   let subtotalC = 0;
   cart.forEach((it) => {
     const p = state.productos.find((x) => x.id === it.productId);
-    if (p) subtotalC += Math.round(p.precio * 100) * it.qty;
+    if (p) subtotalC += Math.round(p.price * 100) * it.qty;
   });
   const ivaC = Math.round(subtotalC * 0.16);
   const totalC = subtotalC + ivaC;
@@ -431,70 +473,69 @@ function renderCobro() {
       <button class="btn primary" id="confirm">Completar venta</button>
     </div>
   `;
+  $("#closeM", wrap).onclick = closeModal;
 
-  wrap.querySelector("#closeM").onclick = closeModal;
-
-  wrap.querySelector("#confirm").onclick = () => {
-    const metodo = wrap.querySelector("#metodo").value;
-    const monto = parseFloat(wrap.querySelector("#monto").value || "0");
+  $("#confirm", wrap).onclick = async () => {
+    const metodo = $("#metodo", wrap).value;
+    const monto = parseFloat($("#monto", wrap).value || "0");
     const montoC = Math.round(monto * 100);
-
     if (isNaN(montoC) || montoC < totalC) {
       alert("El monto recibido es insuficiente.");
       return;
     }
 
-    const folio = "V-" + String(state.folio).padStart(4, "0");
-    const venta = {
-      id: state.folio++,
-      folio,
-      fecha: nowLocalStamp(),
-      cliente: selectedCustomer?.nombre || "Venta al público",
-      items: cart.map((it) => {
-        const p = state.productos.find((x) => x.id === it.productId);
-        const precioC = Math.round(p.precio * 100);
-        return {
-          sku: p.sku,
-          nombre: p.nombre,
-          qty: it.qty,
-          precio: precioC / 100,
-          total: (precioC * it.qty) / 100,
-        };
-      }),
-      subtotal: subtotalC / 100,
-      iva: ivaC / 100,
-      total: totalC / 100,
-      metodo,
+    const payload = {
+      customer_name: selectedCustomer?.name || "Venta al público",
+      payment_method: metodo,
+      items: cart.map((it) => ({ product_id: it.productId, qty: it.qty })),
     };
 
-    state.ventas.unshift(venta);
-    cart.forEach((it) => {
-      const p = state.productos.find((x) => x.id === it.productId);
-      if (p) p.stock = Math.max(0, p.stock - it.qty);
-    });
+    try {
+      const sale = await api("/api/sales", { method: "POST", body: payload });
+      // Refrescar productos y ventas
+      const [products, sales] = await Promise.all([
+        api("/api/products"),
+        api("/api/sales"),
+      ]);
+      state.productos = products;
+      state.ventas = sales.map((s) => ({
+        id: s.id,
+        folio: s.folio,
+        fecha: s.date,
+        cliente: s.customer,
+        metodo: s.method,
+        subtotal: s.subtotal,
+        iva: s.tax,
+        total: s.total,
+        items: null,
+      }));
 
-    cart = [];
-    selectedCustomer = null;
-    saveState();
+      cart = [];
+      selectedCustomer = null;
+      closeModal();
+      renderCart();
+      renderPOS();
+      if ($("#ventasBody")) renderVentas();
 
-    closeModal();
-    renderCart();
-    renderPOS();
-    if (typeof renderVentas === "function") renderVentas();
-
-    const cambioC = montoC - totalC;
-    alert("Venta completada. Cambio: " + money(cambioC / 100));
+      const cambioC = montoC - Math.round((sale.total || totalC / 100) * 100);
+      alert("Venta completada. Cambio: " + money(cambioC / 100));
+    } catch (e) {
+      alert("No se pudo completar la venta: " + e.message);
+    }
   };
 
   return wrap;
 }
 
-// ---- Ventas (ventas.html)
-function initVentas() {
-  requireSession();
-  mountShell();
-  renderVentas();
-}
+/***********************
+ * ---- VENTAS (ventas.html)
+ ************************/
+(function initVentas() {
+  const tbody = $("#ventasBody");
+  if (!tbody) return;
+
+  loadCommon().then(() => renderVentas());
+})();
 
 function renderVentas() {
   const tbody = $("#ventasBody");
@@ -507,25 +548,40 @@ function renderVentas() {
       <td>${v.folio}</td>
       <td>${v.fecha}</td>
       <td>${v.cliente}</td>
-      <td>${v.items.length}</td>
+      <td>${v.items?.length ?? ""}</td>
       <td>${money(v.total)}</td>
       <td>
         <button class="btn ver">Ver</button>
-        <button class="btn">Editar</button>
-        <button class="btn danger">Eliminar</button>
+        <button class="btn edit">Editar</button>
+        <button class="btn danger del">Eliminar</button>
       </td>
     `;
-    tr.querySelector(".ver").onclick = () => openModal(renderVentaDetalle(v));
-    tr.querySelector(".btn:not(.ver):not(.danger)").onclick = () =>
-      openModal(renderVentaForm(v));
-    tr.querySelector(".danger").onclick = () => deleteVenta(v);
+    tr.querySelector(".ver").onclick = async () => {
+      // cargar detalle si no está
+      if (!v.items) {
+        const full = await api(`/api/sales/${v.id}`);
+        v.items = full.items.map((i) => ({
+          nombre: i.name,
+          qty: i.qty,
+          precio: i.price,
+          total: i.total,
+          sku: i.sku,
+        }));
+        v.subtotal = full.subtotal;
+        v.iva = full.tax;
+        v.total = full.total;
+      }
+      openModal(renderVentaDetalle(v));
+    };
+    tr.querySelector(".edit").onclick = () => openModal(renderVentaForm(v));
+    tr.querySelector(".del").onclick = () => deleteVenta(v);
     tbody.appendChild(tr);
   });
 }
 
+// Detalle de venta
 function renderVentaDetalle(v) {
   const wrap = document.createElement("div");
-
   const itemsHtml =
     v.items && v.items.length
       ? v.items
@@ -572,55 +628,62 @@ function renderVentaDetalle(v) {
       <button class="btn" id="closeM">Cerrar</button>
     </div>
   `;
-
-  wrap.querySelector("#closeM").onclick = closeModal;
+  $("#closeM", wrap).onclick = closeModal;
   return wrap;
 }
 
-function deleteVenta(v) {
-  if (!confirm(`¿Eliminar la venta ${v.folio}? Se restaurará el stock.`))
-    return;
-
-  v.items.forEach((it) => {
-    const p = state.productos.find((x) => x.sku === it.sku);
-    if (p) p.stock += it.qty;
-  });
-
-  state.ventas = state.ventas.filter((x) => x.id !== v.id);
-  saveState();
-
-  if ($("#ventasBody")) renderVentas();
-  if (typeof renderPOS === "function") renderPOS();
-  if ($("#inventarioBody")) renderInventario();
-  alert("Venta eliminada y stock restaurado.");
+// Eliminar venta (DELETE /api/sales/:id)
+async function deleteVenta(v) {
+  if (!confirm(`¿Eliminar la venta ${v.folio}?`)) return;
+  try {
+    await api(`/api/sales/${v.id}`, { method: "DELETE" });
+    const [products, sales] = await Promise.all([
+      api("/api/products"),
+      api("/api/sales"),
+    ]);
+    state.productos = products;
+    state.ventas = sales.map((s) => ({
+      id: s.id,
+      folio: s.folio,
+      fecha: s.date,
+      cliente: s.customer,
+      metodo: s.method,
+      subtotal: s.subtotal,
+      iva: s.tax,
+      total: s.total,
+      items: null,
+    }));
+    renderVentas();
+    if ($("#inventarioBody")) renderInventario();
+    if ($("#productGrid")) renderPOS();
+  } catch (e) {
+    alert("No se pudo eliminar: " + e.message);
+  }
 }
 
+// Editar venta (PUT /api/sales/:id)
 function renderVentaForm(v) {
   const prodBySku = (sku) => state.productos.find((p) => p.sku === sku);
 
-  const draft = v.items.map((it) => ({
-    sku: it.sku,
-    nombre: it.nombre,
-    precio: it.precio, // en pesos
-    qty: it.qty,
-  }));
-
-  const maxMap = {};
-  draft.forEach((it) => {
-    const p = prodBySku(it.sku);
-    const original = v.items.find((x) => x.sku === it.sku)?.qty || 0;
-    maxMap[it.sku] = original + (p ? p.stock : 0);
-  });
-
-  function calcTotalsCents() {
-    let subC = 0;
-    draft.forEach((it) => {
-      subC += Math.round(it.precio * 100) * it.qty;
+  // si no hay items cargados aún, pedimos detalle
+  if (!v.items) {
+    api(`/api/sales/${v.id}`).then((full) => {
+      v.items = full.items.map((i) => ({
+        sku: i.sku,
+        nombre: i.name,
+        precio: i.price,
+        qty: i.qty,
+      }));
+      v.subtotal = full.subtotal;
+      v.iva = full.tax;
+      v.total = full.total;
+      closeModal();
+      openModal(renderVentaForm(v)); // reabrir con datos
     });
-    const ivaC = Math.round(subC * 0.16);
-    return { subC, ivaC, totC: subC + ivaC };
+    const placeholder = document.createElement("div");
+    placeholder.innerHTML = `<p class="muted">Cargando venta...</p>`;
+    return placeholder;
   }
-  let { subC, ivaC, totC } = calcTotalsCents();
 
   const wrap = document.createElement("div");
   wrap.innerHTML = `
@@ -655,19 +718,14 @@ function renderVentaForm(v) {
           </tr>
         </thead>
         <tbody id="editItemsBody">
-          ${draft
+          ${v.items
             .map(
               (it) => `
-            <tr data-sku="${it.sku}">
-              <td>${it.nombre}<div class="muted">SKU: ${it.sku}</div></td>
-              <td>
-                <input class="input qty" type="number" min="0" max="${
-                  maxMap[it.sku]
-                }" value="${it.qty}">
-                <div class="muted" style="font-size:12px">Máx: ${
-                  maxMap[it.sku]
-                }</div>
-              </td>
+            <tr data-sku="${it.sku || ""}">
+              <td>${it.nombre}<div class="muted">SKU: ${it.sku || ""}</div></td>
+              <td><input class="input qty" type="number" min="0" value="${
+                it.qty
+              }"></td>
               <td>${money(it.precio)}</td>
               <td class="cell-total">${money(it.precio * it.qty)}</td>
             </tr>
@@ -680,9 +738,9 @@ function renderVentaForm(v) {
 
     <div class="row end" style="margin-top:8px">
       <div class="card" style="min-width:240px">
-        <div>Subtotal: <strong id="edSub">${money(subC / 100)}</strong></div>
-        <div>IVA: <strong id="edIva">${money(ivaC / 100)}</strong></div>
-        <div>Total: <strong id="edTot">${money(totC / 100)}</strong></div>
+        <div>Subtotal: <strong id="edSub">${money(v.subtotal)}</strong></div>
+        <div>IVA: <strong id="edIva">${money(v.iva)}</strong></div>
+        <div>Total: <strong id="edTot">${money(v.total)}</strong></div>
       </div>
     </div>
 
@@ -692,86 +750,99 @@ function renderVentaForm(v) {
     </div>
   `;
 
-  wrap.querySelectorAll(".qty").forEach((inp) => {
-    inp.addEventListener("input", (e) => {
-      const tr = e.target.closest("tr");
-      const sku = tr.dataset.sku;
-      let n = parseInt(e.target.value || "0", 10);
+  const qtyInputs = $$(".qty", wrap);
+  qtyInputs.forEach((inp, idx) => {
+    inp.addEventListener("input", () => {
+      let n = parseInt(inp.value || "0", 10);
       if (isNaN(n) || n < 0) n = 0;
-      const max = maxMap[sku];
-      if (n > max) n = max;
-      e.target.value = n;
+      inp.value = n;
+      v.items[idx].qty = n;
 
-      const it = draft.find((x) => x.sku === sku);
-      it.qty = n;
+      // recalc
+      const sub = v.items.reduce((s, it) => s + it.precio * it.qty, 0);
+      const iva = sub * 0.16;
+      const tot = sub + iva;
 
-      tr.querySelector(".cell-total").textContent = money(it.precio * it.qty);
-
-      const totals = calcTotalsCents();
-      subC = totals.subC;
-      ivaC = totals.ivaC;
-      totC = totals.totC;
-      $("#edSub", wrap).textContent = money(subC / 100);
-      $("#edIva", wrap).textContent = money(ivaC / 100);
-      $("#edTot", wrap).textContent = money(totC / 100);
+      // actualizar celdas
+      const row = inp.closest("tr");
+      $(".cell-total", row).textContent = money(v.items[idx].precio * n);
+      $("#edSub", wrap).textContent = money(sub);
+      $("#edIva", wrap).textContent = money(iva);
+      $("#edTot", wrap).textContent = money(tot);
     });
   });
 
   $("#closeM", wrap).onclick = closeModal;
 
-  $("#saveV", wrap).onclick = () => {
-    draft.forEach((it) => {
-      const original = v.items.find((x) => x.sku === it.sku)?.qty || 0;
-      const diff = it.qty - original;
-      const p = prodBySku(it.sku);
-      if (p) {
-        if (p.stock - diff < 0) {
-          alert(
-            `No hay stock suficiente para "${p.nombre}". Máximo permitido ya aplicado.`
-          );
-          return;
-        }
-        p.stock -= diff;
-      }
-    });
+  $("#saveV", wrap).onclick = async () => {
+    const payload = {
+      customer_name:
+        ($("#edCliente", wrap).value || "Venta al público").trim() ||
+        "Venta al público",
+      payment_method: $("#edMetodo", wrap).value,
+      items: v.items
+        .map((it) => {
+          const p =
+            prodBySku(it.sku) ||
+            state.productos.find((pp) => pp.name === it.nombre);
+          return { product_id: p ? p.id : null, qty: it.qty };
+        })
+        .filter((x) => x.product_id),
+    };
+    if (!payload.items.length) {
+      alert("La venta no puede quedar vacía.");
+      return;
+    }
 
-    v.cliente =
-      ($("#edCliente", wrap).value || "Venta al público").trim() ||
-      "Venta al público";
-    v.metodo = $("#edMetodo", wrap).value;
-    v.items = draft.map((it) => ({
-      sku: it.sku,
-      nombre: it.nombre,
-      qty: it.qty,
-      precio: it.precio,
-      total: it.precio * it.qty,
-    }));
-    v.subtotal = subC / 100;
-    v.iva = ivaC / 100;
-    v.total = totC / 100;
-
-    saveState();
-    closeModal();
-    if ($("#ventasBody")) renderVentas();
-    if (typeof renderPOS === "function") renderPOS();
-    if ($("#inventarioBody")) renderInventario();
-    alert("Venta actualizada.");
+    try {
+      await api(`/api/sales/${v.id}`, { method: "PUT", body: payload });
+      const [products, sales] = await Promise.all([
+        api("/api/products"),
+        api("/api/sales"),
+      ]);
+      state.productos = products;
+      state.ventas = sales.map((s) => ({
+        id: s.id,
+        folio: s.folio,
+        fecha: s.date,
+        cliente: s.customer,
+        metodo: s.method,
+        subtotal: s.subtotal,
+        iva: s.tax,
+        total: s.total,
+        items: null,
+      }));
+      closeModal();
+      renderVentas();
+      if ($("#inventarioBody")) renderInventario();
+      if ($("#productGrid")) renderPOS();
+      alert("Venta actualizada.");
+    } catch (e) {
+      alert("No se pudo actualizar la venta: " + e.message);
+    }
   };
 
   return wrap;
 }
 
-// ---- Productos (productos.html)
-function initProductos() {
-  requireSession();
-  mountShell();
-  renderProductos();
-  $("#btnAddProducto").onclick = () => openModal(renderProductoForm());
-}
+/***********************
+ * ---- PRODUCTOS (productos.html)
+ ************************/
+(function initProductos() {
+  const tbody = $("#productosBody");
+  if (!tbody) return;
+
+  loadCommon().then(() => renderProductos());
+
+  const btnAdd = $("#btnAddProducto");
+  if (btnAdd) btnAdd.onclick = () => openModal(renderProductoForm());
+})();
 
 function renderProductos() {
   const tbody = $("#productosBody");
+  if (!tbody) return;
   tbody.innerHTML = "";
+
   state.productos.forEach((p) => {
     const estado =
       p.stock <= 0
@@ -779,19 +850,30 @@ function renderProductos() {
         : p.stock <= p.min
         ? '<span class="badge warning">Bajo stock</span>'
         : '<span class="badge success">En stock</span>';
+
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${p.sku}</td><td>${p.nombre}</td><td>${money(
-      p.precio
-    )}</td>
-    <td>${
-      p.stock
-    }</td><td>${estado}</td><td><button class="btn">Editar</button> <button class="btn danger">Eliminar</button></td>`;
-    tr.querySelector(".btn").onclick = () => openModal(renderProductoForm(p));
-    tr.querySelector(".danger").onclick = () => {
-      if (confirm("¿Eliminar producto?")) {
-        state.productos = state.productos.filter((x) => x.id !== p.id);
-        saveState();
+    tr.innerHTML = `
+      <td>${p.sku}</td>
+      <td>${p.name}</td>
+      <td>${money(p.price)}</td>
+      <td>${p.stock}</td>
+      <td>${estado}</td>
+      <td>
+        <button class="btn edit">Editar</button>
+        <button class="btn danger del">Eliminar</button>
+      </td>
+    `;
+    tr.querySelector(".edit").onclick = () => openModal(renderProductoForm(p));
+    tr.querySelector(".del").onclick = async () => {
+      if (!confirm("¿Eliminar producto?")) return;
+      try {
+        await api(`/api/products/${p.id}`, { method: "DELETE" });
+        state.productos = await api("/api/products");
         renderProductos();
+        if ($("#inventarioBody")) renderInventario();
+        if ($("#productGrid")) renderPOS();
+      } catch (e) {
+        alert(e.message);
       }
     };
     tbody.appendChild(tr);
@@ -802,64 +884,245 @@ function renderProductoForm(p) {
   const isEdit = !!p;
   const wrap = document.createElement("div");
   wrap.innerHTML = `
-    <h3>${isEdit ? "Editar" : "Nuevo"} producto</h3>
-    <div class="grid cols-2">
-      <label>SKU<br><input id="fSku" class="input" value="${
-        p?.sku || ""
-      }"></label>
-      <label>Nombre<br><input id="fNombre" class="input" value="${
-        p?.nombre || ""
-      }"></label>
-      <label>Precio<br><input id="fPrecio" type="number" class="input" value="${
-        p?.precio || 0
-      }"></label>
-      <label>Stock<br><input id="fStock" type="number" class="input" value="${
-        p?.stock || 0
-      }"></label>
-      <label>Mínimo<br><input id="fMin" type="number" class="input" value="${
-        p?.min || 0
-      }"></label>
-    </div>
-    <div class="row end" style="margin-top:10px">
-      <button class="btn" id="closeM">Cancelar</button>
-      <button class="btn primary" id="saveM">Guardar</button>
-    </div>`;
+  <h3>${isEdit ? "Editar" : "Nuevo"} producto</h3>
+  <div class="grid cols-2">
+    <label>SKU<br><input id="fSku" class="input" value="${
+      p?.sku || ""
+    }"></label>
+    <label>Nombre<br><input id="fNombre" class="input" value="${
+      p?.name || ""
+    }"></label>
+    <label>Precio<br><input id="fPrecio" type="number" class="input" value="${
+      p?.price ?? 0
+    }"></label>
+    <label>Stock<br><input id="fStock" type="number" class="input" value="${
+      p?.stock ?? 0
+    }"></label>
+    <label>Mínimo<br><input id="fMin" type="number" class="input" value="${
+      p?.min ?? 0
+    }"></label>
+    <label>Imagen (URL)<br>
+      <input id="fImgUrl" class="input" placeholder="https://... o /uploads/sku.jpg" value="${
+        p?.image_url || ""
+      }">
+    </label>
+  </div>
+  <div style="margin:8px 0">
+    <img id="imgPreview" src="${
+      p?.image_url
+        ? p.image_url.startsWith("http")
+          ? p.image_url
+          : API_BASE + p.image_url
+        : ""
+    }" alt="" style="max-width:220px; ${p?.image_url ? "" : "display:none"}">
+  </div>
+  <div class="row end" style="margin-top:10px">
+    <button class="btn" id="closeM">Cancelar</button>
+    <button class="btn primary" id="saveM">Guardar</button>
+  </div>
+`;
   $("#closeM", wrap).onclick = closeModal;
-  $("#saveM", wrap).onclick = () => {
-    const np = {
-      id: p?.id || Math.max(0, ...state.productos.map((x) => x.id)) + 1,
+
+  $("#saveM", wrap).onclick = async () => {
+    const body = {
       sku: $("#fSku", wrap).value.trim(),
-      nombre: $("#fNombre", wrap).value.trim(),
-      precio: parseFloat($("#fPrecio", wrap).value || "0"),
-      stock: parseInt($("#fStock", wrap).value || "0"),
-      min: parseInt($("#fMin", wrap).value || "0"),
+      name: $("#fNombre", wrap).value.trim(),
+      price: parseFloat($("#fPrecio", wrap).value || "0"),
+      stock: parseInt($("#fStock", wrap).value || "0", 10),
+      min: parseInt($("#fMin", wrap).value || "0", 10),
+      image_url: $("#fImgUrl", wrap).value.trim(), // <--- NUEVO
     };
-    if (!np.sku || !np.nombre) {
+
+    $("#fImgUrl", wrap).addEventListener("input", (e) => {
+      const url = (e.target.value || "").trim();
+      const prev = $("#imgPreview", wrap);
+      if (!url) {
+        prev.style.display = "none";
+        return;
+      }
+      prev.src = url.startsWith("http")
+        ? url
+        : API_BASE + url.replace(/^\/+/, "/");
+      prev.style.display = "block";
+    });
+
+    if (!body.sku || !body.name) {
       alert("SKU y Nombre son obligatorios.");
       return;
     }
-    if (isEdit) {
-      Object.assign(p, np);
-    } else {
-      state.productos.push(np);
+
+    try {
+      if (isEdit) await api(`/api/products/${p.id}`, { method: "PUT", body });
+      else await api(`/api/products`, { method: "POST", body });
+      state.productos = await api("/api/products");
+      closeModal();
+      renderProductos();
+      if ($("#inventarioBody")) renderInventario();
+      if ($("#productGrid")) renderPOS();
+    } catch (e) {
+      alert(e.message);
     }
-    saveState();
-    closeModal();
-    renderProductos();
   };
+
   return wrap;
 }
 
-// ---- Inventario (stock.html)
-function initStock() {
-  requireSession();
-  mountShell();
-  renderInventario();
+/***********************
+ * ---- INVENTARIO (stock.html)
+ ************************/
+(function initInventario() {
+  const tbody = $("#inventarioBody");
+  if (!tbody) return;
+  loadCommon().then(() => renderInventario());
+})();
+
+// Modal: Ajustar stock (IN/OUT/SET)
+function renderAjusteStockModal(p) {
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <h3>Ajustar stock — ${p.name} (SKU: ${p.sku})</h3>
+    <div class="grid cols-2" style="margin-top:8px">
+      <label>Tipo de movimiento<br>
+        <select id="stkTipo" class="input">
+          <option value="IN">Entrada (IN)</option>
+          <option value="OUT">Salida (OUT)</option>
+          <option value="SET">Fijar stock (SET)</option>
+        </select>
+      </label>
+      <label id="lblQty">Cantidad<br>
+        <input id="stkQty" class="input" type="number" min="0" step="1" placeholder="0">
+      </label>
+      <label id="lblSet" class="hidden">Nuevo stock<br>
+        <input id="stkSet" class="input" type="number" min="0" step="1" placeholder="${p.stock}">
+      </label>
+      <label>Nota<br>
+        <input id="stkNote" class="input" placeholder="Opcional">
+      </label>
+    </div>
+    <div class="row end" style="margin-top:10px">
+      <button class="btn" id="closeM">Cancelar</button>
+      <button class="btn primary" id="saveM">Aplicar</button>
+    </div>
+  `;
+  const tipo = $("#stkTipo", wrap);
+  const lblQty = $("#lblQty", wrap);
+  const lblSet = $("#lblSet", wrap);
+
+  tipo.onchange = () => {
+    const isSet = tipo.value === "SET";
+    lblSet.classList.toggle("hidden", !isSet);
+    lblQty.classList.toggle("hidden", isSet);
+  };
+
+  $("#closeM", wrap).onclick = closeModal;
+  $("#saveM", wrap).onclick = async () => {
+    try {
+      const note = $("#stkNote", wrap).value.trim();
+      if (tipo.value === "SET") {
+        const stock = parseInt($("#stkSet", wrap).value || "0", 10);
+        if (isNaN(stock) || stock < 0) {
+          alert("Stock inválido");
+          return;
+        }
+        await api("/api/stock/set", {
+          method: "POST",
+          body: { product_id: p.id, stock, note },
+        });
+      } else {
+        const qty = parseInt($("#stkQty", wrap).value || "0", 10);
+        if (isNaN(qty) || qty <= 0) {
+          alert("Cantidad inválida");
+          return;
+        }
+        await api("/api/stock/adjust", {
+          method: "POST",
+          body: { product_id: p.id, type: tipo.value, qty, note },
+        });
+      }
+
+      // refrescar productos y vistas
+      state.productos = await api("/api/products");
+      closeModal();
+      renderInventario();
+      if ($("#productosBody")) renderProductos();
+      if ($("#productGrid")) renderPOS();
+      alert("Ajuste aplicado.");
+    } catch (e) {
+      alert("No se pudo ajustar: " + e.message);
+    }
+  };
+
+  return wrap;
 }
 
+// Modal: Ver movimientos de stock de un producto
+function renderMovimientosModal(productId) {
+  const wrap = document.createElement("div");
+  wrap.innerHTML = `
+    <h3>Movimientos de stock</h3>
+    <div class="card" style="margin-top:8px">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Cantidad</th>
+            <th>Nota</th>
+            <th>Producto</th>
+          </tr>
+        </thead>
+        <tbody id="movBody">
+          <tr><td colspan="5" class="muted">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="row end" style="margin-top:10px">
+      <button class="btn" id="closeM">Cerrar</button>
+    </div>
+  `;
+  $("#closeM", wrap).onclick = closeModal;
+
+  // cargar desde API
+  (async () => {
+    try {
+      const url = productId
+        ? `/api/stock/movements?product_id=${productId}`
+        : "/api/stock/movements";
+      const rows = await api(url);
+      const body = $("#movBody", wrap);
+      body.innerHTML = rows.length
+        ? rows
+            .map(
+              (r) => `
+        <tr>
+          <td>${r.created_at}</td>
+          <td>${r.type}</td>
+          <td>${r.qty}</td>
+          <td>${r.note || ""}</td>
+          <td>${r.sku} — ${r.name}</td>
+        </tr>
+      `
+            )
+            .join("")
+        : `<tr><td colspan="5" class="muted">Sin movimientos</td></tr>`;
+    } catch (e) {
+      $(
+        "#movBody",
+        wrap
+      ).innerHTML = `<tr><td colspan="5" class="muted">Error: ${e.message}</td></tr>`;
+    }
+  })();
+
+  return wrap;
+}
+
+// Tabla de inventario con acciones
 function renderInventario() {
   const tbody = $("#inventarioBody");
+  if (!tbody) return;
+
   tbody.innerHTML = "";
+
   state.productos.forEach((p) => {
     const estado =
       p.stock <= 0
@@ -867,32 +1130,68 @@ function renderInventario() {
         : p.stock <= p.min
         ? '<span class="badge warning">Bajo stock</span>'
         : '<span class="badge success">En stock</span>';
+
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${p.sku}</td><td>${p.nombre}</td><td>${p.stock}</td><td>${p.min}</td><td>${estado}</td>`;
+    tr.innerHTML = `
+      <td>${p.sku}</td>
+      <td>${p.name}</td>
+      <td>${p.stock}</td>
+      <td>${p.min}</td>
+      <td>${estado}</td>
+      <td>
+        <div class="row">
+          <button class="btn" data-act="ajustar">Ajustar</button>
+          <button class="btn" data-act="mov">Movimientos</button>
+        </div>
+      </td>
+    `;
+
+    tr.querySelector('[data-act="ajustar"]').onclick = () =>
+      openModal(renderAjusteStockModal(p));
+    tr.querySelector('[data-act="mov"]').onclick = () =>
+      openModal(renderMovimientosModal(p.id));
+
     tbody.appendChild(tr);
   });
 }
 
-// ---- Clientes (clientes.html)
-function initClientes() {
-  requireSession();
-  mountShell();
-  renderClientes();
-  $("#btnAddCliente").onclick = () => openModal(renderClienteForm());
-}
+/***********************
+ * ---- CLIENTES (clientes.html)
+ ************************/
+(function initClientes() {
+  const tbody = $("#clientesBody");
+  if (!tbody) return;
+
+  loadCommon().then(() => renderClientes());
+
+  const btnAdd = $("#btnAddCliente");
+  if (btnAdd) btnAdd.onclick = () => openModal(renderClienteForm());
+})();
 
 function renderClientes() {
   const tbody = $("#clientesBody");
+  if (!tbody) return;
   tbody.innerHTML = "";
   state.clientes.forEach((c) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${c.nombre}</td><td>${c.email}</td><td>${c.tel}</td><td><button class="btn">Editar</button> <button class="btn danger">Eliminar</button></td>`;
-    tr.querySelector(".btn").onclick = () => openModal(renderClienteForm(c));
-    tr.querySelector(".danger").onclick = () => {
-      if (confirm("¿Eliminar cliente?")) {
-        state.clientes = state.clientes.filter((x) => x.id !== c.id);
-        saveState();
+    tr.innerHTML = `
+      <td>${c.name}</td>
+      <td>${c.email || ""}</td>
+      <td>${c.phone || ""}</td>
+      <td>
+        <button class="btn edit">Editar</button>
+        <button class="btn danger del">Eliminar</button>
+      </td>
+    `;
+    tr.querySelector(".edit").onclick = () => openModal(renderClienteForm(c));
+    tr.querySelector(".del").onclick = async () => {
+      if (!confirm("¿Eliminar cliente?")) return;
+      try {
+        await api(`/api/customers/${c.id}`, { method: "DELETE" });
+        state.clientes = await api("/api/customers");
         renderClientes();
+      } catch (e) {
+        alert(e.message);
       }
     };
     tbody.appendChild(tr);
@@ -906,69 +1205,89 @@ function renderClienteForm(c) {
     <h3>${isEdit ? "Editar" : "Nuevo"} cliente</h3>
     <div class="grid cols-2">
       <label>Nombre<br><input id="cNombre" class="input" value="${
-        c?.nombre || ""
+        c?.name || ""
       }"></label>
       <label>Email<br><input id="cEmail" class="input" value="${
         c?.email || ""
       }"></label>
       <label>Teléfono<br><input id="cTel" class="input" value="${
-        c?.tel || ""
+        c?.phone || ""
       }"></label>
     </div>
     <div class="row end" style="margin-top:10px">
       <button class="btn" id="closeM">Cancelar</button>
       <button class="btn primary" id="saveM">Guardar</button>
-    </div>`;
+    </div>
+  `;
   $("#closeM", wrap).onclick = closeModal;
-  $("#saveM", wrap).onclick = () => {
-    const nc = {
-      id: c?.id || Math.max(0, ...state.clientes.map((x) => x.id)) + 1,
-      nombre: $("#cNombre", wrap).value.trim(),
+
+  $("#saveM", wrap).onclick = async () => {
+    const body = {
+      name: $("#cNombre", wrap).value.trim(),
       email: $("#cEmail", wrap).value.trim(),
-      tel: $("#cTel", wrap).value.trim(),
+      phone: $("#cTel", wrap).value.trim(),
     };
-    if (!nc.nombre) {
+    if (!body.name) {
       alert("El nombre es obligatorio.");
       return;
     }
-    if (isEdit) {
-      Object.assign(c, nc);
-    } else {
-      state.clientes.push(nc);
+
+    try {
+      if (isEdit) await api(`/api/customers/${c.id}`, { method: "PUT", body });
+      else await api(`/api/customers`, { method: "POST", body });
+      state.clientes = await api("/api/customers");
+      closeModal();
+      renderClientes();
+    } catch (e) {
+      alert(e.message);
     }
-    saveState();
-    closeModal();
-    renderClientes();
   };
   return wrap;
 }
 
-// ---- Usuarios (usuarios.html)
-function initUsuarios() {
-  requireSession();
-  mountShell();
-  renderUsuarios();
-  $("#btnAddUsuario").onclick = () => openModal(renderUsuarioForm());
-}
+/***********************
+ * ---- USUARIOS (usuarios.html)
+ ************************/
+(function initUsuarios() {
+  const tbody = $("#usuariosBody");
+  if (!tbody) return;
+
+  loadCommon().then(() => renderUsuarios());
+
+  const btnAdd = $("#btnAddUsuario");
+  if (btnAdd) btnAdd.onclick = () => openModal(renderUsuarioForm());
+})();
 
 function renderUsuarios() {
   const tbody = $("#usuariosBody");
+  if (!tbody) return;
   tbody.innerHTML = "";
-  state.users.forEach((u) => {
+
+  state.usuarios.forEach((u) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${u.nombre}</td><td>${u.email}</td><td>${
-      u.rol
-    }</td><td>${
-      u.activo
-        ? '<span class="badge success">Activo</span>'
-        : '<span class="badge danger">Inactivo</span>'
-    }</td><td><button class="btn">Editar</button> <button class="btn danger">Eliminar</button></td>`;
-    tr.querySelector(".btn").onclick = () => openModal(renderUsuarioForm(u));
-    tr.querySelector(".danger").onclick = () => {
-      if (confirm("¿Eliminar usuario?")) {
-        state.users = state.users.filter((x) => x.id !== u.id);
-        saveState();
+    tr.innerHTML = `
+      <td>${u.name}</td>
+      <td>${u.email}</td>
+      <td>${u.role}</td>
+      <td>${
+        u.active
+          ? '<span class="badge success">Activo</span>'
+          : '<span class="badge danger">Inactivo</span>'
+      }</td>
+      <td>
+        <button class="btn edit">Editar</button>
+        <button class="btn danger del">Eliminar</button>
+      </td>
+    `;
+    tr.querySelector(".edit").onclick = () => openModal(renderUsuarioForm(u));
+    tr.querySelector(".del").onclick = async () => {
+      if (!confirm("¿Eliminar usuario?")) return;
+      try {
+        await api(`/api/users/${u.id}`, { method: "DELETE" });
+        state.usuarios = await api("/api/users");
         renderUsuarios();
+      } catch (e) {
+        alert(e.message);
       }
     };
     tbody.appendChild(tr);
@@ -982,90 +1301,65 @@ function renderUsuarioForm(u) {
     <h3>${isEdit ? "Editar" : "Nuevo"} usuario</h3>
     <div class="grid cols-2">
       <label>Nombre<br><input id="uNombre" class="input" value="${
-        u?.nombre || ""
+        u?.name || ""
       }"></label>
       <label>Email<br><input id="uEmail" class="input" value="${
         u?.email || ""
       }"></label>
-      <label>Rol<br><select id="uRol" class="input">
-        <option ${u?.rol === "ADMIN" ? "selected" : ""}>ADMIN</option>
-        <option ${u?.rol === "MANAGER" ? "selected" : ""}>MANAGER</option>
-        <option ${u?.rol === "CASHIER" ? "selected" : ""}>CASHIER</option>
-      </select></label>
-      <label>Activo<br><select id="uActivo" class="input">
-        <option value="true" ${
-          u?.activo !== false ? "selected" : ""
-        }>Sí</option>
-        <option value="false" ${
-          u?.activo === false ? "selected" : ""
-        }>No</option>
-      </select></label>
+      <label>Rol<br>
+        <select id="uRol" class="input">
+          <option ${u?.role === "ADMIN" ? "selected" : ""}>ADMIN</option>
+          <option ${u?.role === "MANAGER" ? "selected" : ""}>MANAGER</option>
+          <option ${u?.role === "STAFF" ? "selected" : ""}>STAFF</option>
+          <option ${u?.role === "CASHIER" ? "selected" : ""}>CASHIER</option>
+        </select>
+      </label>
+      ${
+        isEdit
+          ? ""
+          : `<label>Contraseña<br><input id="uPass" class="input" type="password" value="123456"></label>`
+      }
+      <label>Activo<br>
+        <select id="uActivo" class="input">
+          <option value="true" ${
+            u?.active !== false ? "selected" : ""
+          }>Sí</option>
+          <option value="false" ${
+            u?.active === false ? "selected" : ""
+          }>No</option>
+        </select>
+      </label>
     </div>
     <div class="row end" style="margin-top:10px">
       <button class="btn" id="closeM">Cancelar</button>
       <button class="btn primary" id="saveM">Guardar</button>
-    </div>`;
+    </div>
+  `;
   $("#closeM", wrap).onclick = closeModal;
-  $("#saveM", wrap).onclick = () => {
-    const nu = {
-      id: u?.id || Math.max(0, ...state.users.map((x) => x.id)) + 1,
-      nombre: $("#uNombre", wrap).value.trim(),
+
+  $("#saveM", wrap).onclick = async () => {
+    const body = {
+      name: $("#uNombre", wrap).value.trim(),
       email: $("#uEmail", wrap).value.trim(),
-      rol: $("#uRol", wrap).value,
-      activo: $("#uActivo", wrap).value === "true",
+      role: $("#uRol", wrap).value,
+      active: $("#uActivo", wrap).value === "true",
     };
-    if (!nu.nombre || !nu.email) {
+    if (!isEdit) body.password = $("#uPass", wrap).value || "123456";
+    if (!body.name || !body.email) {
       alert("Nombre y Email son obligatorios.");
       return;
     }
-    if (isEdit) {
-      Object.assign(u, nu);
-    } else {
-      state.users.push(nu);
+
+    try {
+      if (isEdit) await api(`/api/users/${u.id}`, { method: "PUT", body });
+      else await api(`/api/users`, { method: "POST", body });
+      state.usuarios = await api("/api/users");
+      closeModal();
+      renderUsuarios();
+    } catch (e) {
+      alert(e.message);
     }
-    saveState();
-    closeModal();
-    renderUsuarios();
   };
+
   return wrap;
 }
-
-// ===== Modal helpers (compartido) =====
-function openModal(content) {
-  const m = $("#modal"),
-    c = $("#modalContent");
-  c.innerHTML = "";
-  c.appendChild(content);
-  m.classList.remove("hidden");
-  m.addEventListener("click", backdropClose);
-}
-
-function backdropClose(e) {
-  if (e.target.id === "modal") {
-    closeModal();
-  }
-}
-
-function closeModal() {
-  const m = $("#modal"),
-    c = $("#modalContent");
-  m.classList.add("hidden");
-  c.innerHTML = "";
-  m.removeEventListener("click", backdropClose);
-}
-
-// ===== Punto de entrada por página =====
-document.addEventListener("DOMContentLoaded", () => {
-  const page = document.body.dataset.page || "";
-  if (page === "login") {
-    // nada
-  } else {
-    mountShell();
-  }
-  if (page === "caja") initCaja();
-  if (page === "ventas") initVentas();
-  if (page === "productos") initProductos();
-  if (page === "stock") initStock();
-  if (page === "clientes") initClientes();
-  if (page === "usuarios") initUsuarios();
-});
