@@ -1263,7 +1263,14 @@ function renderUsuarios() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
+  const adminIds = state.usuarios
+    .filter((u) => u.role === "ADMIN")
+    .map((u) => u.id);
+  const firstAdminId = adminIds.length ? Math.min(...adminIds) : null;
+
   state.usuarios.forEach((u) => {
+    const isFirstAdmin = u.role === "ADMIN" && firstAdminId === u.id;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${u.name}</td>
@@ -1276,20 +1283,28 @@ function renderUsuarios() {
       }</td>
       <td>
         <button class="btn edit">Editar</button>
-        <button class="btn danger del">Eliminar</button>
+        ${
+          isFirstAdmin ? "" : `<button class="btn danger del">Eliminar</button>`
+        }
       </td>
     `;
+
     tr.querySelector(".edit").onclick = () => openModal(renderUsuarioForm(u));
-    tr.querySelector(".del").onclick = async () => {
-      if (!confirm("¿Eliminar usuario?")) return;
-      try {
-        await api(`/api/users/${u.id}`, { method: "DELETE" });
-        state.usuarios = await api("/api/users");
-        renderUsuarios();
-      } catch (e) {
-        alert(e.message);
-      }
-    };
+
+    const delBtn = tr.querySelector(".del");
+    if (delBtn) {
+      delBtn.onclick = async () => {
+        if (!confirm("¿Eliminar usuario?")) return;
+        try {
+          await api(`/api/users/${u.id}`, { method: "DELETE" });
+          state.usuarios = await api("/api/users");
+          renderUsuarios();
+        } catch (e) {
+          alert(e.message);
+        }
+      };
+    }
+
     tbody.appendChild(tr);
   });
 }
@@ -1330,34 +1345,62 @@ function renderUsuarioForm(u) {
         </select>
       </label>
     </div>
+    ${
+      isEdit && u?.role === "ADMIN"
+        ? `
+      <div class="card" style="margin-top:8px">
+        <div class="muted">Este usuario es ADMIN: no se permite cambiar el rol ni desactivarlo.</div>
+      </div>
+    `
+        : ""
+    }
     <div class="row end" style="margin-top:10px">
       <button class="btn" id="closeM">Cancelar</button>
       <button class="btn primary" id="saveM">Guardar</button>
     </div>
   `;
+
   $("#closeM", wrap).onclick = closeModal;
 
+  if (isEdit && u?.role === "ADMIN") {
+    const rolSel = $("#uRol", wrap);
+    const actSel = $("#uActivo", wrap);
+    if (rolSel) rolSel.setAttribute("disabled", "disabled");
+    if (actSel) actSel.setAttribute("disabled", "disabled");
+  }
+
   $("#saveM", wrap).onclick = async () => {
-    const body = {
-      name: $("#uNombre", wrap).value.trim(),
-      email: $("#uEmail", wrap).value.trim(),
-      role: $("#uRol", wrap).value,
-      active: $("#uActivo", wrap).value === "true",
-    };
-    if (!isEdit) body.password = $("#uPass", wrap).value || "123456";
-    if (!body.name || !body.email) {
+    const nombre = ($("#uNombre", wrap).value || "").trim();
+    const email = ($("#uEmail", wrap).value || "").trim();
+    if (!nombre || !email) {
       alert("Nombre y Email son obligatorios.");
       return;
     }
 
+    const payload = {
+      name: nombre,
+      email: email,
+      role: $("#uRol", wrap)?.value || u?.role || "STAFF",
+      active: ($("#uActivo", wrap)?.value || "true") === "true",
+    };
+    if (!isEdit) payload.password = $("#uPass", wrap)?.value || "123456";
+
+    if (isEdit && u?.role === "ADMIN") {
+      payload.role = "ADMIN";
+      payload.active = true;
+    }
+
     try {
-      if (isEdit) await api(`/api/users/${u.id}`, { method: "PUT", body });
-      else await api(`/api/users`, { method: "POST", body });
+      if (isEdit) {
+        await api(`/api/users/${u.id}`, { method: "PUT", body: payload });
+      } else {
+        await api(`/api/users`, { method: "POST", body: payload });
+      }
       state.usuarios = await api("/api/users");
       closeModal();
       renderUsuarios();
     } catch (e) {
-      alert(e.message);
+      alert(e.message || "No se pudo guardar el usuario.");
     }
   };
 

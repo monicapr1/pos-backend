@@ -3,6 +3,13 @@ const router = express.Router();
 const db = require("../db");
 const { bcrypt } = require("../auth");
 
+const getFirstAdminId = () => {
+  const row = db
+    .prepare(`SELECT id FROM users WHERE role='ADMIN' ORDER BY id ASC LIMIT 1`)
+    .get();
+  return row?.id ?? null;
+};
+
 // listar
 router.get("/users", (_req, res) => {
   const rows = db
@@ -44,29 +51,57 @@ router.post("/users", (req, res) => {
 
 // actualizar
 router.put("/users/:id", (req, res) => {
+  const id = req.params.id;
+  const current = db.prepare(`SELECT * FROM users WHERE id=?`).get(id);
+  if (!current) return res.status(404).json({ error: "Usuario no encontrado" });
+
   const { name, email, role, active } = req.body || {};
-  const u = db.prepare(`SELECT * FROM users WHERE id=?`).get(req.params.id);
-  if (!u) return res.status(404).json({ error: "No existe" });
+
+  if (current.role === "ADMIN") {
+    if (role && role !== "ADMIN") {
+      return res
+        .status(403)
+        .json({ error: "No se puede cambiar el rol de un ADMIN" });
+    }
+    if (active === false) {
+      return res.status(403).json({ error: "No se puede desactivar un ADMIN" });
+    }
+  }
+
+  const next = {
+    name: name ?? current.name,
+    email: email ?? current.email,
+    role: role ?? current.role,
+    active: typeof active === "boolean" ? active : current.active,
+  };
+
   db.prepare(
     `UPDATE users SET name=?, email=?, role=?, active=? WHERE id=?`
-  ).run(
-    name || u.name,
-    email || u.email,
-    role || u.role,
-    active ?? (u.active ? 1 : 0) ? 1 : 0,
-    u.id
+  ).run(next.name, next.email, next.role, next.active ? 1 : 0, id);
+
+  res.json(
+    db
+      .prepare(`SELECT id, name, email, role, active FROM users WHERE id=?`)
+      .get(id)
   );
-  const row = db
-    .prepare(
-      `SELECT id,name,email,role,active,created_at FROM users WHERE id=?`
-    )
-    .get(u.id);
-  res.json(row);
 });
 
 // eliminar
 router.delete("/users/:id", (req, res) => {
-  db.prepare(`DELETE FROM users WHERE id=?`).run(req.params.id);
+  const id = Number(req.params.id);
+  const u = db.prepare(`SELECT id, role FROM users WHERE id = ?`).get(id);
+  if (!u) return res.status(404).json({ error: "Usuario no encontrado" });
+
+  if (u.role === "ADMIN") {
+    const firstAdminId = getFirstAdminId();
+    if (firstAdminId && id === firstAdminId) {
+      return res
+        .status(403)
+        .json({ error: "No se puede eliminar el primer ADMIN" });
+    }
+  }
+
+  db.prepare(`DELETE FROM users WHERE id = ?`).run(id);
   res.json({ ok: true });
 });
 
