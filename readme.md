@@ -65,6 +65,8 @@ POS_DB_PATH=./src/data/pos.db
 CORS_ORIGIN=http://localhost:5500
 ```
 
+Crea una carpeta `data` en `POS-backend/src`
+
 ## Instalación
 
 1. **Backend**:
