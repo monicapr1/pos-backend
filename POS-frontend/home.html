@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POS System — Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <meta name="theme-color" content="#0B1324">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body>
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand"><span class="logo"></span><span>POS System</span></div>
+  
+      <div class="row">
+        <span id="userLabel" class="muted">Hola, Admin</span>
+        <button id="btnLogout" class="btn"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
+        <button id="themeToggle" class="btn btn-icon" aria-label="Cambiar tema">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="home.html" class="active"><i class="fas fa-home"></i> Home</a>
+    <a href="index.html"><i class="fas fa-cash-register"></i> Caja</a>
+    <a href="ventas.html"><i class="fas fa-receipt"></i> Ventas</a>
+    <a href="productos.html"><i class="fas fa-box"></i> Productos</a>
+    <a href="stock.html"><i class="fas fa-warehouse"></i> Inventario</a>
+    <a href="clientes.html"><i class="fas fa-users"></i> Clientes</a>
+    <a href="usuarios.html"><i class="fas fa-user-cog"></i> Usuarios</a>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="container">
+      <section class="cards">
+        <div class="card" id="topSellCard">
+          <div class="card-header">
+            <h2 class="card-title">
+              <i class="fas fa-chart-line"></i>
+              Top Sell
+              <span class="comparison-badge comparison-up" id="comparisonBadge" style="display: none;">
+                <i class="fas fa-arrow-up"></i> <span id="comparisonValue">0%</span>
+              </span>
+            </h2>
+            <div class="card-actions">
+              <button class="btn btn-icon" id="btnRefresh" aria-label="Actualizar datos">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+              <button class="btn btn-icon" id="btnExport" aria-label="Exportar datos" disabled>
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="toolbar-info">
+              <p id="topSellInfo">
+                <span class="skeleton" style="width: 320px; height: 20px;" aria-hidden="true"></span>
+              </p>
+            </div>
+
+            <select id="productSelector" class="product-selector" aria-label="Seleccionar producto" style="display: none;" disabled>
+              <option value="">Cargando productos...</option>
+            </select>
+
+            <div class="range-group">
+              <button class="btn-range" data-range="7" aria-pressed="false">7 días</button>
+              <button class="btn-range" data-range="14" aria-pressed="false">14 días</button>
+              <button class="btn-range active" data-range="30" aria-pressed="true">30 días</button>
+            </div>
+          </div>
+
+          <div class="chips">
+            <div class="chip" id="chip-avg">
+              <span class="chip-icon"><i class="fas fa-tag"></i></span>
+              <span><strong>Ticket promedio:</strong> <span id="avgTicket">—</span></span>
+            </div>
+            <div class="chip" id="chip-sum">
+              <span class="chip-icon"><i class="fas fa-shopping-cart"></i></span>
+              <span><strong>Ventas:</strong> <span id="sumSales">—</span></span>
+            </div>
+            <div class="chip" id="chip-rev">
+              <span class="chip-icon"><i class="fas fa-dollar-sign"></i></span>
+              <span><strong>Ingresos:</strong> <span id="sumRevenue">—</span></span>
+            </div>
+          </div>
+
+          <div class="chart-container">
+            <canvas id="topSellCanvas" class="ts-chart" role="img" aria-label="Evolución diaria del producto más vendido"></canvas>
+          </div>
+
+          <div id="topSellEmpty" class="empty-state" style="display: none;">
+            <i class="fas fa-chart-pie"></i>
+            <p>Aún no hay ventas registradas en el rango seleccionado.</p>
+            <a href="ventas.html" class="btn btn-primary">
+              <i class="fas fa-plus"></i> Registrar una venta
+            </a>
+          </div>
+
+          <div id="topSellError" class="error-state" style="display: none;">
+            <i class="fas fa-exclamation-circle"></i>
+            <p id="errorMessage">No se pudieron cargar los datos. Por favor, intenta nuevamente.</p>
+            <button id="btnRetry" class="btn btn-primary">
+              <i class="fas fa-redo"></i> Reintentar
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="footer">© 2025 POS System — Demo</div>
+  </main>
+
+  <!-- Config API -->
+  <script>window.API_BASE = "http://localhost:4000";</script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/top-sell.js"></script>
+
+</body>
+</html>

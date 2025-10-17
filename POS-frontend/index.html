@@ -1,99 +1,130 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS System — Caja</title>
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-    <meta name="theme-color" content="#0B1324">
-    <link rel="stylesheet" href="styles/styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>POS System — Caja</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <meta name="theme-color" content="#0B1324">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles/styles.css">
 </head>
-
 <body>
-    <!-- Topbar -->
-    <header class="topbar">
-        <div class="wrap">
-            <div class="brand"><span class="logo"></span><span>POS System</span></div>
-            <div class="row">
-                <span id="userLabel" class="muted"></span>
-                <button id="btnLogout" class="btn">Cerrar sesión</button>
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <span class="logo"></span><span>POS System</span>
+      </div>
+      <div class="row">
+        
+        <span id="userLabel" class="muted" style="margin-left:8px;"></span>
+        <button id="btnLogout" class="btn" style="margin-left:8px;">Cerrar sesión</button>
+                <button id="themeToggle" class="btn btn-icon" aria-label="Cambiar tema">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="home.html" ><i class="fas fa-home"></i> Home</a>
+    <a href="index.html" class="active"><i class="fas fa-cash-register"></i> Caja</a>
+    <a href="ventas.html"><i class="fas fa-receipt"></i> Ventas</a>
+    <a href="productos.html"><i class="fas fa-box"></i> Productos</a>
+    <a href="stock.html"><i class="fas fa-warehouse"></i> Inventario</a>
+    <a href="clientes.html"><i class="fas fa-users"></i> Clientes</a>
+    <a href="usuarios.html"><i class="fas fa-user-cog"></i> Usuarios</a>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="container">
+      <section>
+        <div class="row spaced">
+          <h1>Caja</h1>
+          <div class="row">
+            <button id="btnSelectCustomer" class="btn">Cliente</button>
+            <button id="btnVaciar" class="btn">Vaciar carrito</button>
+          </div>
+        </div>
+
+        <div class="cols">
+          <!-- Carrito -->
+          <div class="card">
+            <table class="table cart-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Cantidad</th>
+                  <th>Precio</th>
+                  <th>Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cartBody"></tbody>
+            </table>
+
+            <div class="row end" style="margin-top:8px">
+              <div class="card" style="min-width:260px">
+                <div>Subtotal: <strong id="lblSubtotal">$ 0.00</strong></div>
+                <div>IVA: <strong id="lblTax">$ 0.00</strong></div>
+                <div>Total: <strong id="lblTotal">$ 0.00</strong></div>
+                <div class="muted" id="lblCliente">Cliente: Venta al público</div>
+                <div class="row end" style="margin-top:10px">
+                  <button id="btnCobrar" class="btn primary" disabled>Cobrar</button>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Productos -->
+          <div class="card">
+            <div class="row spaced">
+              <h3>Productos</h3>
+              <input id="searchProducts" class="input" placeholder="Buscar por nombre o SKU…">
+            </div>
+            <div id="productGrid" class="grid cols-3" style="margin-top:8px"></div>
+          </div>
         </div>
-    </header>
-
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <a href="index.html" class="active">Caja</a>
-        <a href="ventas.html">Ventas</a>
-        <a href="productos.html">Productos</a>
-        <a href="stock.html">Inventario</a>
-        <a href="clientes.html">Clientes</a>
-        <a href="usuarios.html">Usuarios</a>
-    </aside>
-
-    <!-- Main -->
-    <main class="main">
-        <div class="container">
-            <section>
-                <div class="row spaced">
-                    <h1>Caja</h1>
-                    <div class="row">
-                        <button id="btnSelectCustomer" class="btn">Cliente</button>
-                        <button id="btnVaciar" class="btn">Vaciar carrito</button>
-                    </div>
-                </div>
-
-                <div class="cols">
-                    <!-- Carrito -->
-                    <div class="card">
-                        <table class="table cart-table">
-                            <thead>
-                                <tr>
-                                    <th>Producto</th>
-                                    <th>Cantidad</th>
-                                    <th>Precio</th>
-                                    <th>Total</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody id="cartBody"></tbody>
-                        </table>
-
-                        <div class="row end" style="margin-top:8px">
-                            <div class="card" style="min-width:260px">
-                                <div>Subtotal: <strong id="lblSubtotal">$ 0.00</strong></div>
-                                <div>IVA: <strong id="lblTax">$ 0.00</strong></div>
-                                <div>Total: <strong id="lblTotal">$ 0.00</strong></div>
-                                <div class="muted" id="lblCliente">Cliente: Venta al público</div>
-                                <div class="row end" style="margin-top:10px">
-                                    <button id="btnCobrar" class="btn primary" disabled>Cobrar</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Productos -->
-                    <div class="card">
-                        <div class="row spaced">
-                            <h3>Productos</h3>
-                            <input id="searchProducts" class="input" placeholder="Buscar por nombre o SKU…">
-                        </div>
-                        <div id="productGrid" class="grid cols-3" style="margin-top:8px"></div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div class="footer">© 2025 POS System — Demo</div>
-    </main>
-
-    <!-- Modal -->
-    <div id="modal" class="modal hidden">
-        <div class="card" id="modalContent"></div>
+      </section>
     </div>
 
-    <script src="js/app.js"></script>
-</body>
+    <div class="footer">© 2025 POS System — Demo</div>
+  </main>
 
+  <!-- Modal -->
+  <div id="modal" class="modal hidden">
+    <div class="card" id="modalContent"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+  <script>
+    // Refuerzo mínimo para navegación/seguridad en cliente:
+    // - Mostrar usuario en la topbar (si tu app.js no lo hace ya)
+    // - Botón Home por accesibilidad extra (la sidebar ya lo tiene)
+    (function () {
+      const userLabel = document.getElementById('userLabel');
+      try {
+        // Asumiendo que app.js expone getMe() o guarda el usuario en localStorage
+        const meRaw = localStorage.getItem('me');
+        if (meRaw && userLabel) {
+          const me = JSON.parse(meRaw);
+          userLabel.textContent = me?.email ? `Sesión: ${me.email}` : '';
+        }
+      } catch (e) { /* noop */ }
+
+      // Botón Home (por si necesitas navegación adicional en topbar)
+      const btnGoHome = document.getElementById('btnGoHome');
+      if (btnGoHome) {
+        btnGoHome.addEventListener('click', function (e) {
+          e.preventDefault();
+          window.location.href = 'home.html';
+        });
+      }
+    })();
+  </script>
+</body>
 </html>

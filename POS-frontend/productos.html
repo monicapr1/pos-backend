@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>POS System — Productos</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <meta name="theme-color" content="#0B1324">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="styles/styles.css">
 </head>
 
@@ -17,17 +17,22 @@
       <div class="row">
         <span id="userLabel" class="muted"></span>
         <button id="btnLogout" class="btn">Cerrar sesión</button>
+                <button id="themeToggle" class="btn btn-icon" aria-label="Cambiar tema">
+          <i class="fas fa-moon"></i>
+        </button>
       </div>
     </div>
   </header>
 
+  <!-- Sidebar -->
   <aside class="sidebar">
-    <a href="index.html">Caja</a>
-    <a href="ventas.html">Ventas</a>
-    <a href="productos.html" class="active">Productos</a>
-    <a href="stock.html">Inventario</a>
-    <a href="clientes.html">Clientes</a>
-    <a href="usuarios.html">Usuarios</a>
+    <a href="home.html"><i class="fas fa-home"></i> Home</a>
+    <a href="index.html"><i class="fas fa-cash-register"></i> Caja</a>
+    <a href="ventas.html"><i class="fas fa-receipt"></i> Ventas</a>
+    <a href="productos.html" class="active"><i class="fas fa-box"></i> Productos</a>
+    <a href="stock.html"><i class="fas fa-warehouse"></i> Inventario</a>
+    <a href="clientes.html"><i class="fas fa-users"></i> Clientes</a>
+    <a href="usuarios.html"><i class="fas fa-user-cog"></i> Usuarios</a>
   </aside>
 
   <main class="main">
@@ -35,22 +40,30 @@
       <section>
         <div class="row spaced">
           <h1>Productos</h1>
-          <button id="btnAddProducto" class="btn primary">Agregar producto</button>
+          <div class="row">
+            <div class="input-group" style="margin-right: 12px;">
+              <input id="searchProductos" type="search" class="input"
+                     placeholder="Buscar por nombre o SKU…" autocomplete="off" />
+            </div>
+            <button id="btnAddProducto" class="btn primary"><i class="fas fa-plus"></i> Agregar producto</button>
+          </div>
         </div>
 
         <div class="card">
           <table class="table">
             <thead>
               <tr>
-                <th>SKU</th>
+                <th style="width: 140px;">SKU</th>
                 <th>Nombre</th>
-                <th>Precio</th>
-                <th>Stock</th>
-                <th>Estado</th>
-                <th></th>
+                <th style="width: 140px;">Precio</th>
+                <th style="width: 120px;">Stock</th>
+                <th style="width: 120px;">Mín.</th>
+                <th style="width: 140px;">Acciones</th>
               </tr>
             </thead>
-            <tbody id="productosBody"></tbody>
+            <tbody id="productosBody">
+              <tr><td colspan="6" class="muted">Cargando…</td></tr>
+            </tbody>
           </table>
         </div>
       </section>
@@ -59,11 +72,16 @@
     <div class="footer">© 2025 POS System — Demo</div>
   </main>
 
-  <div id="modal" class="modal hidden">
+  <!-- Modal genérico -->
+  <div id="modal" class="modal hidden" aria-hidden="true">
     <div class="card" id="modalContent"></div>
   </div>
 
-  <script src="js/app.js"></script>
-</body>
+  <!-- Config API (ajusta si tu back corre en otra URL) -->
+  <script>window.API_BASE = window.API_BASE || "http://localhost:4000";</script>
 
+  <!-- App base y módulo de productos -->
+  <script src="js/app.js"></script>
+  <script src="js/productos.js"></script>
+</body>
 </html>

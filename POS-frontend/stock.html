@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>POS System — Inventario</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <meta name="theme-color" content="#0B1324">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="styles/styles.css">
 </head>
-
 <body>
   <header class="topbar">
     <div class="wrap">
@@ -17,17 +16,20 @@
       <div class="row">
         <span id="userLabel" class="muted"></span>
         <button id="btnLogout" class="btn">Cerrar sesión</button>
+        <button id="themeToggle" class="btn btn-icon" aria-label="Cambiar tema">
+          <i class="fas fa-moon"></i>
       </div>
     </div>
   </header>
 
   <aside class="sidebar">
-    <a href="index.html">Caja</a>
-    <a href="ventas.html">Ventas</a>
-    <a href="productos.html">Productos</a>
-    <a href="stock.html" class="active">Inventario</a>
-    <a href="clientes.html">Clientes</a>
-    <a href="usuarios.html">Usuarios</a>
+    <a href="home.html"><i class="fas fa-home"></i> Home</a>
+    <a href="index.html"><i class="fas fa-cash-register"></i> Caja</a>
+    <a href="ventas.html"><i class="fas fa-receipt"></i> Ventas</a>
+    <a href="productos.html"><i class="fas fa-box"></i> Productos</a>
+    <a href="stock.html" class="active"><i class="fas fa-warehouse"></i> Inventario</a>
+    <a href="clientes.html"><i class="fas fa-users"></i> Clientes</a>
+    <a href="usuarios.html"><i class="fas fa-user-cog"></i> Usuarios</a>
   </aside>
 
   <main class="main">
@@ -35,6 +37,7 @@
       <section>
         <div class="row spaced">
           <h1>Inventario</h1>
+          <input id="searchInventario" class="input" type="search" placeholder="Buscar por SKU o producto…">
         </div>
 
         <div class="card">
@@ -46,7 +49,7 @@
                 <th>Stock</th>
                 <th>Mín.</th>
                 <th>Estado</th>
-                <th>Acciones</th> <!-- Acciones para Ajustar/Movimientos -->
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="inventarioBody"></tbody>
@@ -58,12 +61,10 @@
     <div class="footer">© 2025 POS System — Demo</div>
   </main>
 
-  <!-- Modal global -->
   <div id="modal" class="modal hidden">
     <div class="card" id="modalContent"></div>
   </div>
 
   <script src="js/app.js"></script>
 </body>
-
 </html>

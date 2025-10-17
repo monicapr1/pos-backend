@@ -2,10 +2,9 @@ const express = require("express");
 const router = express.Router();
 const db = require("../db");
 
-// Helpers transacción
 const tx = (fn) => db.transaction(fn);
 
-// Listar movimientos (opcionalmente por producto)
+// Listar movimientos 
 router.get("/stock/movements", (req, res) => {
   const { product_id } = req.query;
   const base = `SELECT sm.*, p.sku, p.name
@@ -19,7 +18,6 @@ router.get("/stock/movements", (req, res) => {
   res.json(rows);
 });
 
-// Ajuste simple (entrada/salida) con registro de movimiento
 router.post("/stock/adjust", (req, res) => {
   const { product_id, type, qty, note } = req.body || {};
   if (!product_id || !type || !qty)
@@ -68,7 +66,6 @@ router.post("/stock/adjust", (req, res) => {
   }
 });
 
-// (Opcional) Reemplazar stock directo y registrar diferencia
 router.post("/stock/set", (req, res) => {
   const { product_id, stock, note } = req.body || {};
   if (!product_id || stock == null)

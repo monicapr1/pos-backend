@@ -1,40 +1,45 @@
-# Documentación del Sistema POS
+# Sistema POS Armario — Frontend & Backend
 
-Un sistema de Punto de Venta (POS) minimalista con frontend, backend y base de datos SQLite.
+Un sistema de Punto de Venta (POS) minimalista con **frontend**, **backend** y **SQLite**.
 
-## Características
+## ✨ Características
 
-- **Caja**: Carrito de compras, cobro con IVA al 16%, soporta clientes públicos o registrados.
-- **Ventas**: Ver detalles, editar o eliminar ventas.
-- **Productos**: Operaciones CRUD con seguimiento de stock y cantidad mínima.
-- **Inventario**: Ajustes de stock (ENTRADA/SALIDA/ESTABLECER) y registro de movimientos.
-- **Clientes**: Funcionalidad completa de CRUD.
+- **Caja**: Carrito, cobro con IVA 16%, clientes públicos o registrados.
+- **Ventas**: Listar, ver detalle, editar/eliminar.
+- **Productos**: CRUD con stock y mínimo.
+- **Inventario**: Ajustes (ENTRADA/SALIDA/ESTABLECER) y bitácora de movimientos.
+- **Clientes**: CRUD completo.
 - **Usuarios**: CRUD con roles.
-- **Autenticación**: Sistema de inicio de sesión basado en JWT.
-- **Base de datos**: SQLite (usando `better-sqlite3`).
+- **Autenticación**: JWT (token en `localStorage`).
+- **BD**: SQLite con `better-sqlite3`.
 
-## Tecnologías
+## 🧱 Tecnologías
 
-- **Frontend**: HTML/CSS/JavaScript puro.
+- **Frontend**: HTML + CSS + JavaScript (sin frameworks).
 - **Backend**: Node.js + Express + SQLite (`better-sqlite3`).
 
-## Estructura del Repositorio
+## 📂 Estructura
 
 ```
 POS-frontend/
 ├── assets/
-│   ├── js/app.js
-│   └── styles/styles.css
+│   ├── js/
+│   │   └── app.js
+│   │   └── top-sell.js
+│   └── styles/
+│       └── styles.css
 ├── index.html
+├── login.html
 ├── ventas.html
 ├── productos.html
 ├── stock.html
 ├── clientes.html
-├── usuarios.html
+└── usuarios.html
 
 POS-backend/
 ├── src/
-│   ├── data/pos.db
+│   ├── data/              
+│   │   └── pos.db
 │   ├── routes/
 │   │   ├── auth.js
 │   │   ├── customers.js
@@ -48,48 +53,58 @@ POS-backend/
 └── package.json
 ```
 
-## Requisitos
+## ✅ Requisitos
 
-- **Node.js**: Versión 18+ (se recomienda 20+).
-- **npm**: Versión 8+.
-- **Sistemas operativos**: macOS, Linux o Windows.
+- **Node.js** 18+ (recomendado 20+)
+- **npm** 8+
+- macOS / Linux / Windows
 
-## Variables de Entorno (Backend)
+## 🔐 Variables de entorno (Backend)
 
-Crea un archivo `.env` en `POS-backend/` con lo siguiente:
+Crea `POS-backend/.env`:
 
-```
+```env
 PORT=4000
 JWT_SECRET=super-secreto-cambia-esto
 POS_DB_PATH=./src/data/pos.db
 CORS_ORIGIN=http://localhost:5500
+COMPANY_DOMAIN=hasbolis.com
 ```
 
-Crea una carpeta `data` en `POS-backend/src`
+## 🧰 Instalación
 
-## Instalación
+### 1) Backend
+## IMPORTANTE: USAR NODE 20 RECOMENDADO
 
-1. **Backend**:
+```bash
+cd POS-backend
+node -v        # Debe ser v20.x.  Instalarlo :nvm install 20 - nvm use 20
+npm install
+npm run dev
+# npm start    # modo producción
+```
 
-   ```bash
-   cd POS-backend
-   npm install
-   npm run dev  # o npm start
-   ```
+### 2) Frontend
 
-2. **Frontend**:
-   - Abre `login.html` directamente o usa Live Server (`http://localhost:5500`).
-   - Asegúrate de que `API_BASE` en `POS-frontend/assets/js/app.js` esté configurado como `http://localhost:4000`.
+```bash
+cd POS-frontend
+npx serve
+# npx http-server -p 5500 .
+```
 
-## Inicio de Sesión de Demostración
+## 🔑 Credenciales demo
 
-- **Correo**: `admin@tienda.com`
-- **Contraseña**: `123456`
+- **Correo**: `admin@hasbolis.com`
+- **Contraseña**: `ADMIN`
 
-## Restablecer Base de Datos
-
-Para restablecer la base de datos, elimina los archivos:
+## 🧹 Resetear la Base de Datos
 
 ```bash
 rm -f POS-backend/src/data/pos.db POS-backend/src/data/pos.db-wal POS-backend/src/data/pos.db-shm
+```
+
+## ⚙️ Generar dependencias en backend (solo la primera vez)
+
+```bash
+npm init -y && npm install express cors better-sqlite3 jsonwebtoken bcryptjs morgan dotenv && npm install -D nodemon && npm pkg set scripts.start="node src/index.js" && npm pkg set scripts.dev="nodemon src/index.js"
 ```
