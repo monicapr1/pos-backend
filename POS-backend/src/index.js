@@ -86,6 +86,14 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
 app.use(express.json());
+// Healthcheck público (sin auth)
+app.get("/health", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: "pos-backend",
+    time: new Date().toISOString(),
+  });
+});
 
 app.get("/", (_req, res) => res.json({ ok: true, name: "POS API", version: "1.0" }));
 
